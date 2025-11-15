@@ -1,0 +1,7 @@
+{
+  "componentsDir": "webui/templates/components",
+  "utilsDir": "webui/utils",
+  "moduleName": "github.com/srerickson/ocfl-services",
+  "jsDir": "webui/static/src",
+  "jsPublicPath": "/webui/static/src"
+}

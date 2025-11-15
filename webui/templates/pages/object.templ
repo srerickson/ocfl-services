@@ -1,0 +1,94 @@
+package pages
+
+import (
+	"github.com/srerickson/ocfl-go"
+	"github.com/srerickson/ocfl-services/webui/templates/components/icon"
+	"github.com/srerickson/ocfl-services/webui/templates/components/directory"
+	"github.com/srerickson/ocfl-services/webui/utils"
+	"time"
+)
+
+type ObjectPage struct {
+	ObjectID        string
+	VersionRef      string // version ref from request url
+	CurrentPath     string
+	DigestAlgorithm string
+	Version         VersionBrief
+	DirectoryEntries []*directory.ListEntry
+	ReadmeHref      string
+}
+
+templ Object(page *ObjectPage) {
+	@BaseLayout() {
+		<h1 class="text-xl mt-6 mb-2">
+			<a class="font-bold" href={ utils.LinkObjectPath(page.ObjectID, page.VersionRef, ".", true) }>
+				{ page.ObjectID }
+			</a>
+			for crumbName, crumbPath := range utils.Breadcrumb(page.CurrentPath) {
+				<a href={ utils.LinkObjectPath(page.ObjectID, page.VersionRef, crumbPath, true) } class="text-muted-foreground hover:text-blue-800">
+					<span class="mx-1">/</span>
+					{ crumbName }
+				</a>
+			}
+		</h1>
+		@VersionInfo(page.Version)
+		@directory.List(directory.ListProps{
+			DirPath: page.CurrentPath,
+			Alg:     page.DigestAlgorithm,
+			Entries: page.DirectoryEntries,
+		})
+		if page.ReadmeHref != "" {
+			@ReadmeMD(page.ReadmeHref)
+		}
+	}
+}
+
+type VersionBrief struct {
+	VNum     ocfl.VNum
+	Message  string
+	UserName string
+	UserAddr string
+	Created  time.Time
+}
+
+templ VersionInfo(v VersionBrief) {
+	<div class="ocfl-version-details w-full rounded-lg border bg-gray-50 shadow-sm p-2 mb-6">
+		<div class="flex flex-nowrap items-center gap-4">
+			<div class="flex-none text-gray-500">
+				@icon.ClockFading(icon.Props{Size: 18})
+			</div>
+			<div class="flex-none">
+				<div class="flex items-center gap-2 text-sm">
+					<span class="font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">{ v.VNum.String() }</span>
+					<span class="text-gray-500">•</span>
+					<span class="font-medium text-gray-900">{ v.UserName }</span>
+					<span class="text-gray-500">•</span>
+					<span class="text-gray-600">{ utils.FormatDate(v.Created) }</span>
+				</div>
+			</div>
+			<div class="grow">
+				<div class="text-sm text-gray-800 italic">
+					<span class="text-gray-500">•</span>
+					"{ v.Message }"
+				</div>
+			</div>
+			// <div class="flex-none pl-1 flex items-center space-x-2">
+			// 	@button.Button(button.Props{
+			// 		Size: button.SizeSm,
+			// 		Href: string(utils.DraftForPath(data.Object.ID, data.CurrentPath)),
+			// 	}) {
+			// 		Update
+			// 	}
+			// 	<form id="newDraftForm" method="POST" action="/form/new_draft" style="display: none;">
+			// 		<input type="hidden" name="object_id" value={ data.ObjectID }/>
+			// 	</form>
+			// </div>
+		</div>
+	</div>
+}
+
+templ ReadmeMD(readmeHref string) {
+	<div class="markdown-content w-full rounded-lg border bg-white shadow-sm p-6 my-6">
+		<article class="prose max-w-none" hx-get={ readmeHref } hx-trigger="load"></article>
+	</div>
+}

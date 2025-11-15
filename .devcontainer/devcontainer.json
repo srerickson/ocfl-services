@@ -1,0 +1,9 @@
+{
+  "name": "OCFL Services Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "postCreateCommand": {
+    "install-task": "just devtools"
+  }
+}
