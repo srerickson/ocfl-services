@@ -14,7 +14,8 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-const RefreshInterval = time.Minute * 15
+// min time between checking sidecar
+const RefreshInterval = 20 * time.Second
 
 var ErrNotFound = errors.New("not found")
 

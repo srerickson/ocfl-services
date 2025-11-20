@@ -29,7 +29,7 @@ const maxMarkdownSize = 1024 * 1024 * 2 // 2 MiB
 //go:embed static/dst/*
 var staticFiles embed.FS
 
-// New creates a new server instance with the given provider, OCFL root, and index database
+// New creates handler for serving from accessService's OCFL storage root.
 func New(accessService *access.Service) http.Handler {
 	mux := http.NewServeMux()
 
@@ -119,7 +119,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	// handle file requests: download file or render markdwon
+	// handle file requests: download file
 	handleFile := func(p *params) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -145,6 +145,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 		}
 	}
 
+	// handle file requests: render README
 	handleReadme := func(p *params) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()

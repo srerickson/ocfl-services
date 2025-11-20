@@ -101,7 +101,8 @@ func TestRepo_ReadVersionDir(t *testing.T) {
 				name:    "a_file.txt",
 				digest:  "43a43fe8a8a082d3b5343dfaf2fd0c8b8e370675b1f376e92e9994612c33ea255b11298269d72f797399ebb94edeefe53df243643676548f584fb8603ca53a0f",
 				modVNum: 1,
-				modtime: time.Date(2018, 12, 31, 18, 03, 04, 0, time.Local), // v1 created
+				// "2019-01-01T02:03:04Z"
+				modtime: time.Date(2019, 1, 1, 2, 03, 04, 0, time.UTC), // v1 created
 				size:    20,
 				isDir:   false,
 			},
