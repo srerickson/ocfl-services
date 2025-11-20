@@ -37,7 +37,7 @@ export AWS_ENDPOINT_URL=https://s3.us-xyz.s3provider.com
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 
-# pass environment variables into the conainer
+# pass environment variables into the container
 docker run --rm -p 8283:8283 \
         -e OCFL_ROOT \
         -e AWS_REGION \
@@ -46,3 +46,8 @@ docker run --rm -p 8283:8283 \
         -e AWS_SECRET_ACCESS_KEY \
         ghcr.io/srerickson/ocfl-webui
 ```
+
+The credentials must have permissions for S3 actions:
+- `HeadObject`
+- `GetObject`
+- `ListObjectsV2`
