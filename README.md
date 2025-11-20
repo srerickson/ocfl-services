@@ -27,3 +27,22 @@ $ curl -o - http://localhost:8283/object/ark%3A123%2Fabc/head/a_file.txt
 The `OCFL_ROOT` environment variable should be set to the OCFL storage root to
 serve. The value can be a local filesystem path or an S3 bucket using the format
 `s3://bucket/prefix`. The storage root must use a recognized storage layout.
+
+Here is an example for using a non-AWS S3 endpoint:
+
+```sh
+export OCFL_ROOT=s3://bucket/root
+export AWS_REGION=us-xyx
+export AWS_ENDPOINT_URL=https://s3.us-xyz.s3provider.com
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+
+# pass environment variables into the conainer
+docker run --rm -p 8283:8283 \
+        -e OCFL_ROOT \
+        -e AWS_REGION \
+        -e AWS_ENDPOINT_URL \
+        -e AWS_ACCESS_KEY_ID \
+        -e AWS_SECRET_ACCESS_KEY \
+        ghcr.io/srerickson/ocfl-webui
+```
