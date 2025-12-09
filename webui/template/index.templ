@@ -2,20 +2,17 @@ package pages
 
 templ Index() {
 	@BaseLayout() {
-		<div class="max-w-2xl mx-auto mt-20">
-			<form id="searchForm" class="flex gap-4">
+		<div>
+			<form id="searchForm">
 				<input
 					type="text"
 					id="objectId"
 					name="objectId"
 					placeholder="Object ID (e.g., ark:abc/123)"
-					class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class=""
 					required
 				/>
-				<button
-					type="submit"
-					class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-				>
+				<button type="submit">
 					Find Object
 				</button>
 			</form>

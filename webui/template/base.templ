@@ -10,13 +10,17 @@ templ BaseLayout() {
 			<script defer src="/static/app.js"></script>
 		</head>
 		<body>
-			<div class="z-50 flex flex-wrap px-4 py-2 shadow-sm overflow-hidden">
-				<div class="grow">
-					<a href="/">ocfl server</a>
+			<div class="top-menu">
+				<div class="object-id">ocfl-spec</div>
+				<div>
+					<a href="files.html">Files</a>
+				</div>
+				<div>
+					<a href="history.html">History</a>
 				</div>
 			</div>
-			<div class="container max-w-screen-xl mx-auto px-4 pb-8">
-				<!-- page content -->
+			<!-- page content -->
+			<div class="main">
 				{ children... }
 			</div>
 		</body>

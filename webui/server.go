@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"path"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -19,8 +20,7 @@ import (
 	"github.com/gomarkdown/markdown/parser"
 	"github.com/srerickson/ocfl-go"
 	"github.com/srerickson/ocfl-services/access"
-	"github.com/srerickson/ocfl-services/webui/templates/components/directory"
-	"github.com/srerickson/ocfl-services/webui/templates/pages"
+	pages "github.com/srerickson/ocfl-services/webui/template"
 )
 
 // max size for markdown files we will render
@@ -201,12 +201,13 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 			if r.Method == http.MethodHead {
 				return
 			}
+			sortVersionDirEntries(entries)
 			page := &pages.ObjectPage{
 				ObjectID:         p.objID,
 				CurrentPath:      p.path,
 				VersionRef:       p.verRef,
 				DigestAlgorithm:  obj.Alg(),
-				DirectoryEntries: make([]*directory.ListEntry, len(entries)),
+				DirectoryEntries: make([]*pages.DirectoryEntry, 0, len(entries)),
 				Version: pages.VersionBrief{
 					VNum:     p.ver,
 					Created:  ver.Created(),
@@ -215,12 +216,20 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 					UserAddr: ver.UserAddr(),
 				},
 			}
-			for i, entry := range entries {
+			if page.CurrentPath != "." {
+				parentDirEntry := &pages.DirectoryEntry{
+					Name:  "..",
+					Href:  "../",
+					IsDir: true,
+				}
+				page.DirectoryEntries = append(page.DirectoryEntries, parentDirEntry)
+			}
+			for _, entry := range entries {
 				href := entry.Name()
 				if entry.IsDir() {
 					href += "/"
 				}
-				page.DirectoryEntries[i] = &directory.ListEntry{
+				page.DirectoryEntries = append(page.DirectoryEntries, &pages.DirectoryEntry{
 					Name:    entry.Name(),
 					Href:    templ.URL(href),
 					Digest:  entry.Digest(),
@@ -228,7 +237,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 					Size:    entry.Size(),
 					HasSize: entry.HasSize(),
 					Modtime: entry.Modtime(),
-				}
+				})
 				// add readme to directory list
 				if isReadmeFile(entry.Name()) && !entry.IsDir() {
 					page.ReadmeHref = entry.Name() + "?render=1"
@@ -304,4 +313,21 @@ func redirectToDefaultObjectPath(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, redirect.String(), http.StatusFound)
 		return
 	}
+}
+
+// sort list of directory entries so that all sub-directories appear before
+// files
+func sortVersionDirEntries(entries []access.VersionDirEntry) {
+	slices.SortFunc(entries, func(a, b access.VersionDirEntry) int {
+		if a.IsDir() == b.IsDir() {
+			return strings.Compare(a.Name(), b.Name())
+		}
+		if a.IsDir() {
+			return -1
+		}
+		if b.IsDir() {
+			return 1
+		}
+		return 0
+	})
 }

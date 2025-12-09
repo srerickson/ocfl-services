@@ -29,7 +29,7 @@ func BaseLayout() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" class=\"h-full\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"stylesheet\" href=\"/static/app.css\"><script defer src=\"/static/app.js\"></script></head><body><div class=\"z-50 flex flex-wrap px-4 py-2 shadow-sm overflow-hidden\"><div class=\"grow\"><a href=\"/\">ocfl server</a></div></div><div class=\"container max-w-screen-xl mx-auto px-4 pb-8\"><!-- page content -->")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\" class=\"h-full\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><link rel=\"stylesheet\" href=\"/static/app.css\"><script defer src=\"/static/app.js\"></script></head><body><div class=\"top-menu\"><div class=\"object-id\">ocfl-spec</div><div><a href=\"files.html\">Files</a></div><div><a href=\"history.html\">History</a></div></div><!-- page content --><div class=\"main\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
