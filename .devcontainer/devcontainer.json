@@ -4,6 +4,6 @@
     "dockerfile": "Dockerfile"
   },
   "postCreateCommand": {
-    "install-task": "just devtools"
+    "install-task": "npm install && npx just install-tools"
   }
 }

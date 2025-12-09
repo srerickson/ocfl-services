@@ -6,5 +6,4 @@ RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && sudo apt-get update \
     && sudo apt-get install -y \
         nodejs \
-        just \
-    && sudo apt-get clean
+     && sudo apt-get clean

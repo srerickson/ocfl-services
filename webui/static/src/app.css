@@ -40,7 +40,7 @@
 	--code-block-bg: var(--c-bg-alt);
 	--code-block-color: var(--c-text-1);
 	--header-height: var(--s2);
-	--border-radius: var(--s-2);
+	--border-radius: var(--s-5);
   
 	font-family: var(--font-family);
 }
@@ -76,8 +76,8 @@ h2 {
 	font-size: var(--s1);
 }
 
-.top-menu .object-id {
-	font-weight: 600;
+.top-menu .server-name {
+	font-weight: 500;
 }
 
 .main {
@@ -85,28 +85,57 @@ h2 {
   margin: 0 auto;
 }
 
-/* file list */
 
-.files .breadcrumb {
-	display: flex;
+.panel {
 	width: 100%;
-	line-height: var(--code-line-height);
-	background-color: var(--c-bg-alt);
 	border: var(--border-thin) solid var(--c-border);
-	border-radius: var(--border-radius) var(--border-radius) 0 0;
+	border-radius: var(--border-radius)
+}
+
+.panel .panel-top {
+	display: flex;
+	background-color: var(--c-bg-alt);
+	border-top-left-radius: var(--border-radius);
+	border-top-right-radius: var(--border-radius);
+	border-bottom: var(--border-thin) solid var(--c-border);
+	gap: var(--s-2);
 	margin-bottom: 0;
 	padding: var(--s-2);
-	gap: var(--s-2);
+}
+
+.panel .panel-body {
+	margin-top: 0;
+	padding: var(--s-2);
+}
+
+
+/* file list */
+
+.files .breadcrumb.panel-top {
+	line-height: var(--s0);
+	font-size: var(--s0);
 }
 
 .files .breadcrumb .path {
 	flex-grow: 1;
 	display: flex;
 	gap: var(--s-4);
-	font-weight: 700;
 }
 
-.files .breadcrumb .version {
+.files .breadcrumb .path .version-ref {
+	color: var(--c-text-2);
+	border: var(--border-thin) solid var(--c-border);
+	border-radius: 3px;
+	padding: 3px;
+	font-size: var(--s-1);
+	font-weight: bold;
+}
+
+.files .breadcrumb a {
+	padding-top: 3px;
+}
+
+.files .breadcrumb .history {
 	display: flex;
 	font-size: var(--s-1);
 	gap: var(--s-4);
@@ -116,9 +145,6 @@ h2 {
 	width: 100%;
 	table-layout:fixed;
 	border-spacing: 0;
-	border: var(--border-thin) solid var(--c-border);
-	border-top: none;
-	border-radius: 0 0 var(--border-radius) var(--border-radius);
 	margin-top: 0;
 }
 
@@ -146,7 +172,7 @@ h2 {
 
 .files .filename {
 	display: flex;
-	gap: var(--s-2);
+	gap: var(--s-1);
 }
 
 .files .filename svg {
@@ -155,12 +181,21 @@ h2 {
 
 .files .filename a {
 	color: var(--c-text-1);
+	font-size: var(--s0);
+}
+
+.files .bytes {
+	font-size: var(--s-1);
 }
 
 .files .digest {
 	font-family: var(--font-family-mono);
-	font-size: var(--code-font-size);
+	font-size: var(--s-1);
 	color: var(--c-text-2);
+}
+
+.files .modtime {
+	font-size: var(--s-1);
 }
 
 /* history */

@@ -1,4 +1,4 @@
-package pages
+package template
 
 templ BaseLayout() {
 	<!DOCTYPE html>
@@ -8,15 +8,12 @@ templ BaseLayout() {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script defer src="/static/app.js"></script>
+			@icons()
 		</head>
 		<body>
 			<div class="top-menu">
-				<div class="object-id">ocfl-spec</div>
-				<div>
-					<a href="files.html">Files</a>
-				</div>
-				<div>
-					<a href="history.html">History</a>
+				<div class="server-name">
+					<a href="/">OCFL webui</a>
 				</div>
 			</div>
 			<!-- page content -->

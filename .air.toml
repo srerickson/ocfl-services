@@ -1,0 +1,17 @@
+#:schema https://json.schemastore.org/any.json
+
+[build]
+pre_cmd = ["npx just generate"]
+cmd = "go build -o ./tmp/ocfl-webui ./cmd/ocfl-webui"
+entrypoint = ["./tmp/ocfl-webui", "-root", "testdata/reg-extension-dir-root"]
+include_ext = ["go", "templ", "css", "js"]
+
+exclude_dir = ["webui/static/dst"]
+exclude_regex = [".*_templ\\.go"]
+
+
+[proxy]
+# Enable live-reloading on the browser.
+enabled = true
+proxy_port = 8284
+app_port = 8283 

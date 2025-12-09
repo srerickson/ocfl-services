@@ -20,7 +20,7 @@ import (
 	"github.com/gomarkdown/markdown/parser"
 	"github.com/srerickson/ocfl-go"
 	"github.com/srerickson/ocfl-services/access"
-	pages "github.com/srerickson/ocfl-services/webui/template"
+	"github.com/srerickson/ocfl-services/webui/template"
 )
 
 // max size for markdown files we will render
@@ -202,13 +202,13 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 				return
 			}
 			sortVersionDirEntries(entries)
-			page := &pages.ObjectPage{
+			page := &template.ObjectPage{
 				ObjectID:         p.objID,
 				CurrentPath:      p.path,
 				VersionRef:       p.verRef,
 				DigestAlgorithm:  obj.Alg(),
-				DirectoryEntries: make([]*pages.DirectoryEntry, 0, len(entries)),
-				Version: pages.VersionBrief{
+				DirectoryEntries: make([]*template.DirectoryEntry, 0, len(entries)),
+				Version: template.VersionBrief{
 					VNum:     p.ver,
 					Created:  ver.Created(),
 					Message:  ver.Message(),
@@ -217,7 +217,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 				},
 			}
 			if page.CurrentPath != "." {
-				parentDirEntry := &pages.DirectoryEntry{
+				parentDirEntry := &template.DirectoryEntry{
 					Name:  "..",
 					Href:  "../",
 					IsDir: true,
@@ -229,7 +229,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 				if entry.IsDir() {
 					href += "/"
 				}
-				page.DirectoryEntries = append(page.DirectoryEntries, &pages.DirectoryEntry{
+				page.DirectoryEntries = append(page.DirectoryEntries, &template.DirectoryEntry{
 					Name:    entry.Name(),
 					Href:    templ.URL(href),
 					Digest:  entry.Digest(),
@@ -243,7 +243,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 					page.ReadmeHref = entry.Name() + "?render=1"
 				}
 			}
-			pages.Object(page).Render(r.Context(), w)
+			template.Object(page).Render(r.Context(), w)
 		}
 	}
 
@@ -290,7 +290,7 @@ func markdownToHTML(md []byte) []byte {
 
 func HandleIndex() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		pages.Index().Render(r.Context(), w)
+		template.Index().Render(r.Context(), w)
 	}
 }
 

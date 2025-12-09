@@ -1,21 +1,23 @@
-package pages
+package template
 
 templ Index() {
 	@BaseLayout() {
-		<div>
-			<form id="searchForm">
-				<input
-					type="text"
-					id="objectId"
-					name="objectId"
-					placeholder="Object ID (e.g., ark:abc/123)"
-					class=""
-					required
-				/>
-				<button type="submit">
-					Find Object
-				</button>
-			</form>
+		<div class="panel">
+			<div class="panel-body">
+				<form id="searchForm">
+					<input
+						type="text"
+						id="objectId"
+						name="objectId"
+						placeholder="Object ID (e.g., ark:abc/123)"
+						class=""
+						required
+					/>
+					<button type="submit">
+						Find Object
+					</button>
+				</form>
+			</div>
 		</div>
 		<script>
 			document.getElementById('searchForm').addEventListener('submit', function(e) {
