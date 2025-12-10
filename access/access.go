@@ -75,6 +75,13 @@ func (s *Service) GetVersionInfo(ctx context.Context, objID string, vn int) (Ver
 	return s.db.GetObjectVersion(ctx, s.rootID, objID, vn)
 }
 
+func (s *Service) ListVersions(ctx context.Context, objID string) ([]VersionInfo, error) {
+	if _, err := s.SyncObject(ctx, objID); err != nil {
+		return nil, err
+	}
+	return s.db.ListObjectVersions(ctx, s.rootID, objID)
+}
+
 // IndexRoot indexes the all objects in the storage root. For duplicate calls,
 // the duplicate caller waits for the original to complete and receives the same
 // results.

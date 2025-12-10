@@ -126,6 +126,26 @@ func (db *DB) GetObjectVersion(ctx context.Context, rootID string, objID string,
 	return &versionInfo{ver: version}, nil
 }
 
+func (db *DB) ListObjectVersions(ctx context.Context, rootID string, objID string) ([]access.VersionInfo, error) {
+	conn, err := db.Pool.Take(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Pool.Put(conn)
+	versions, err := ocflite.ListVersions(conn, rootID, objID)
+	if err != nil {
+		if errors.Is(err, ocflite.ErrNotFound) {
+			return nil, access.ErrNotFound
+		}
+		return nil, err
+	}
+	result := make([]access.VersionInfo, len(versions))
+	for i, v := range versions {
+		result[i] = &versionInfo{ver: v}
+	}
+	return result, nil
+}
+
 func (db *DB) ReadObjectVersionDir(ctx context.Context, rootID string, objID string, vn int, dir string) ([]access.VersionDirEntry, error) {
 	conn, err := db.Pool.Take(ctx)
 	if err != nil {

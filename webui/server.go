@@ -40,17 +40,19 @@ func New(accessService *access.Service) http.Handler {
 	// homepage
 	mux.HandleFunc("GET /{$}", HandleIndex())
 
-	// object view
-	mux.HandleFunc("GET /object/{id}/{version}/{path...}", HandleGetObjectPath(accessService))
-	mux.HandleFunc("GET /object/{id}/{version}", redirectToDefaultObjectPath)
-	mux.HandleFunc("GET /object/{id}/", redirectToDefaultObjectPath)
-	mux.HandleFunc("GET /object/{id}", redirectToDefaultObjectPath)
+	// object files view
+	mux.HandleFunc("GET /object/{id}/{version}/{path...}", HandleGetObjectFiles(accessService))
+	mux.HandleFunc("GET /object/{id}/{version}", redirectToDefaultObjectFiles)
+	mux.HandleFunc("GET /object/{id}/", redirectToDefaultObjectFiles)
+	mux.HandleFunc("GET /object/{id}", redirectToDefaultObjectFiles)
+
+	mux.HandleFunc("GET /history/{id}", HandleGetObjectHistory(accessService))
 
 	// wrap with logging middleware
 	return loggingMiddleware(accessService.Logger())(mux)
 }
 
-func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
+func HandleGetObjectFiles(svc *access.Service) http.HandlerFunc {
 
 	// request parameters
 	type params struct {
@@ -188,8 +190,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 			if p.ver.Num() < 1 {
 				p.ver = obj.Head()
 			}
-			ver, err := svc.GetVersionInfo(ctx, p.objID, p.ver.Num())
-			if err != nil {
+			if _, err := svc.GetVersionInfo(ctx, p.objID, p.ver.Num()); err != nil {
 				logErr(w, r, p, err)
 				return
 			}
@@ -208,13 +209,13 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 				VersionRef:       p.verRef,
 				DigestAlgorithm:  obj.Alg(),
 				DirectoryEntries: make([]*template.DirectoryEntry, 0, len(entries)),
-				Version: template.VersionBrief{
-					VNum:     p.ver,
-					Created:  ver.Created(),
-					Message:  ver.Message(),
-					UserName: ver.UserName(),
-					UserAddr: ver.UserAddr(),
-				},
+				// Version: template.VersionBrief{
+				// 	VNum:     p.ver,
+				// 	Created:  ver.Created(),
+				// 	Message:  ver.Message(),
+				// 	UserName: ver.UserName(),
+				// 	UserAddr: ver.UserAddr(),
+				// },
 			}
 			if page.CurrentPath != "." {
 				parentDirEntry := &template.DirectoryEntry{
@@ -266,6 +267,51 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 	}
 }
 
+func HandleGetObjectHistory(svc *access.Service) http.HandlerFunc {
+	logErr := func(w http.ResponseWriter, r *http.Request, id string, err error) {
+		if err == nil {
+			return
+		}
+		if errors.Is(err, access.ErrNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		logAttrs := []slog.Attr{
+			slog.String("object_id", id),
+		}
+		svc.Logger().LogAttrs(r.Context(), slog.LevelError, err.Error(), logAttrs...)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		id := r.PathValue("id")
+		obj, err := svc.SyncObject(ctx, id)
+		if err != nil {
+			logErr(w, r, id, err)
+			return
+		}
+		versions, err := svc.ListVersions(ctx, id)
+		if err != nil {
+			logErr(w, r, id, err)
+			return
+		}
+		page := &template.ObjectHistory{
+			ObjectID: id,
+			Versions: make([]*template.VersionBrief, len(versions)),
+		}
+		for i, v := range versions {
+			page.Versions[i] = &template.VersionBrief{
+				VNum:     ocfl.V(i+1, obj.Head().Padding()),
+				Created:  v.Created(),
+				Message:  v.Message(),
+				UserName: v.UserName(),
+				UserAddr: v.UserAddr(),
+			}
+		}
+		template.ObjectHistoryPage(page).Render(ctx, w)
+	}
+}
+
 // isReadmeFile checks if the file has a markdown extension
 func isReadmeFile(name string) bool {
 	lower := path.Base(strings.ToLower(name))
@@ -294,7 +340,7 @@ func HandleIndex() http.HandlerFunc {
 	}
 }
 
-func redirectToDefaultObjectPath(w http.ResponseWriter, r *http.Request) {
+func redirectToDefaultObjectFiles(w http.ResponseWriter, r *http.Request) {
 	version := r.PathValue("version")
 	currentPath := r.PathValue("path")
 	// since the object id may include escape sequences update both Path and

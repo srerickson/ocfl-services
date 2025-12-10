@@ -1,7 +1,6 @@
 package template
 
 import (
-	"github.com/srerickson/ocfl-go"
 	"github.com/srerickson/ocfl-services/webui/utils"
 	"time"
 )
@@ -11,7 +10,6 @@ type ObjectFiles struct {
 	VersionRef       string // version ref from request url
 	CurrentPath      string
 	DigestAlgorithm  string
-	Version          VersionBrief
 	DirectoryEntries []*DirectoryEntry
 	ReadmeHref       string
 }
@@ -26,13 +24,7 @@ type DirectoryEntry struct {
 	IsDir   bool
 }
 
-type VersionBrief struct {
-	VNum     ocfl.VNum
-	Message  string
-	UserName string
-	UserAddr string
-	Created  time.Time
-}
+
 
 templ ObjectFilesPage(page *ObjectFiles) {
 	@BaseLayout() {
@@ -40,17 +32,17 @@ templ ObjectFilesPage(page *ObjectFiles) {
 		<div class="files panel">
 			<div class="breadcrumb panel-top">
 				<div class="path">
-					<a class="version-ref" href={ utils.LinkObjectPath(page.ObjectID, page.VersionRef, ".", true) }>
+					<a class="version-ref" href={ utils.LinkObjectFiles(page.ObjectID, page.VersionRef, ".", true) }>
 						{ page.VersionRef }
 					</a>
 					for crumbName, crumbPath := range utils.Breadcrumb(page.CurrentPath) {
-						<a href={ utils.LinkObjectPath(page.ObjectID, page.VersionRef, crumbPath, true) }>
+						<a href={ utils.LinkObjectFiles(page.ObjectID, page.VersionRef, crumbPath, true) }>
 							<span class="mx-1">/</span>
 							{ crumbName }
 						</a>
 					}
 				</div>
-				<a href="/history" class="history">
+				<a href={ utils.LinkObjectHistory(page.ObjectID)} class="history">
 					@icon("clock")
 					<div class="created">2025-04-2</div>
 				</a>

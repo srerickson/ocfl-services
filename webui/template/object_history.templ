@@ -1,0 +1,60 @@
+package template
+
+import (
+    "time"
+    "github.com/srerickson/ocfl-go"
+	"github.com/srerickson/ocfl-services/webui/utils"
+)
+
+type ObjectHistory struct {
+    ObjectID string
+    Versions []*VersionBrief
+}
+
+type VersionBrief struct {
+	VNum     ocfl.VNum
+	Message  string
+	UserName string
+	UserAddr string
+	Created  time.Time
+}
+
+templ ObjectHistoryPage(page *ObjectHistory) {
+    @BaseLayout() {
+        <div class="object-history">
+            <h2> {page.ObjectID} </h2>
+            <div class="panel">
+                <div class="panel-top">Version History</div>
+                <div class="panel-body">
+                    <table>
+                        <tbody>
+                            for _, entry := range page.Versions {
+                                @objectVersionRow(entry)
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+templ objectVersionRow(entry *VersionBrief){
+    <tr>
+		<td>
+			{ entry.VNum.String() }
+		</td>
+        <td>
+            { utils.FormatDate(entry.Created) }
+        </td>
+		<td>
+            { entry.Message }
+		</td>
+		<td>
+            { entry.UserAddr }
+		</td>
+		<td>
+			{ entry.UserName }
+		</td>
+	</tr>
+}

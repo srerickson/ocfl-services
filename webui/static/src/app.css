@@ -114,6 +114,32 @@ input, button {
 	padding: var(--s-2);
 }
 
+.panel-body table {
+	width: 100%;
+	table-layout:fixed;
+	border-spacing: 0;
+	margin-top: 0;
+}
+
+.panel-body thead th {
+	font-weight: 300;
+}
+
+.panel-body tr:last-child td {
+	border-bottom: none;
+}
+
+.panel-body th, td {
+	line-height: var(--code-line-height);
+	text-align: left;
+  	overflow: hidden;
+  	white-space: nowrap;
+  	text-overflow: ellipsis;
+	padding: var(--s-2);
+	font-size: var(--s-1);
+	border-bottom: var(--border-thin) solid var(--c-border);
+}
+
 
 /* file list */
 
@@ -147,33 +173,9 @@ input, button {
 	gap: var(--s-4);
 }
 
-.files table {
-	width: 100%;
-	table-layout:fixed;
-	border-spacing: 0;
-	margin-top: 0;
-}
-
-.files thead th {
-	font-weight: 300;
-}
-
 .files td:first-child,
 .files th:first-child {
 	width: 40%;
-}
-.files tr:last-child td {
-	border-bottom: none;
-}
-
-.files th, td {
-	line-height: var(--code-line-height);
-	text-align: left;
-  	overflow: hidden;
-  	white-space: nowrap;
-  	text-overflow: ellipsis;
-	padding: var(--s-2);
-	border-bottom: var(--border-thin) solid var(--c-border);
 }
 
 .files .filename {
@@ -216,7 +218,14 @@ input, button {
 	margin-top: 0;
 }
 
-/* history */
+
+.object-history td:first-child,
+.object-history th:first-child {
+	width: 8ch;
+}
+
+
+/* history file tree */
 .history {
 	display: block;
   	/* padding-block: 6px; */

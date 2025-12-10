@@ -38,6 +38,9 @@ type Database interface {
 	// object's most recent version is used.
 	GetObjectVersion(ctx context.Context, rootID string, objID string, vn int) (VersionInfo, error)
 
+	// ListObjectVersions
+	ListObjectVersions(ctx context.Context, rootID string, objdID string) ([]VersionInfo, error)
+
 	// ReadObjectVersionDir returns listing for entries in an OCFL object
 	// version's logical state. . If vn < 1,
 	// the object's most recent version is used.
