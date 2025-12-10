@@ -202,7 +202,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 				return
 			}
 			sortVersionDirEntries(entries)
-			page := &template.ObjectPage{
+			page := &template.ObjectFiles{
 				ObjectID:         p.objID,
 				CurrentPath:      p.path,
 				VersionRef:       p.verRef,
@@ -243,7 +243,7 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 					page.ReadmeHref = entry.Name() + "?render=1"
 				}
 			}
-			template.Object(page).Render(r.Context(), w)
+			template.ObjectFilesPage(page).Render(r.Context(), w)
 		}
 	}
 

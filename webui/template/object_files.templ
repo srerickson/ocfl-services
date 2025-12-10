@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type ObjectPage struct {
+type ObjectFiles struct {
 	ObjectID         string
 	VersionRef       string // version ref from request url
 	CurrentPath      string
@@ -34,7 +34,7 @@ type VersionBrief struct {
 	Created  time.Time
 }
 
-templ Object(page *ObjectPage) {
+templ ObjectFilesPage(page *ObjectFiles) {
 	@BaseLayout() {
 		<h2 class="object-id">{ page.ObjectID }</h2>
 		<div class="files panel">
@@ -67,48 +67,18 @@ templ Object(page *ObjectPage) {
 		</div>
 
 		if page.ReadmeHref != "" {
-			@ReadmeMD(page.ReadmeHref)
+			@readmeMD(page.ReadmeHref)
 		}
 	}
 }
 
-templ VersionInfo(v VersionBrief) {
-	<div class="ocfl-version-details w-full rounded-lg border bg-gray-50 shadow-sm p-2 mb-6">
-		<div class="flex flex-nowrap items-center gap-4">
-			<div class="flex-none">
-				<div class="flex items-center gap-2 text-sm">
-					<span class="font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs">{ v.VNum.String() }</span>
-					<span class="text-gray-500">•</span>
-					<span class="font-medium text-gray-900">{ v.UserName }</span>
-					<span class="text-gray-500">•</span>
-					<span class="text-gray-600">{ utils.FormatDate(v.Created) }</span>
-				</div>
-			</div>
-			<div class="grow">
-				<div class="text-sm text-gray-800 italic">
-					<span class="text-gray-500">•</span>
-					"{ v.Message }"
-				</div>
-			</div>
-			// <div class="flex-none pl-1 flex items-center space-x-2">
-			// 	@button.Button(button.Props{
-			// 		Size: button.SizeSm,
-			// 		Href: string(utils.DraftForPath(data.Object.ID, data.CurrentPath)),
-			// 	}) {
-			// 		Update
-			// 	}
-			// 	<form id="newDraftForm" method="POST" action="/form/new_draft" style="display: none;">
-			// 		<input type="hidden" name="object_id" value={ data.ObjectID }/>
-			// 	</form>
-			// </div>
-		</div>
-	</div>
-}
-
-templ ReadmeMD(readmeHref string) {
+templ readmeMD(readmeHref string) {
 	if readmeHref != "" {
-		<div class="readme markdown">
-			<article class="prose" hx-get={ readmeHref } hx-trigger="load"></article>
+		<div class="panel readme">
+			<div class="panel-top">README</div>
+			<div class="panel-body">
+				<article class="prose markdown" hx-get={ readmeHref } hx-trigger="load"></article>
+			</div>
 		</div>
 	}
 }

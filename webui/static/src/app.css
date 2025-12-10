@@ -40,7 +40,7 @@
 	--code-block-bg: var(--c-bg-alt);
 	--code-block-color: var(--c-text-1);
 	--header-height: var(--s2);
-	--border-radius: var(--s-5);
+	--border-radius: var(--s-2);
   
 	font-family: var(--font-family);
 }
@@ -62,6 +62,11 @@ a, a:visited, a:hover {
 h2 {
 	font-size: var(--s3);
 	margin: var(--s0) 0;
+}
+
+input, button {
+	font-size: var(--s0);
+	margin-bottom: var(--s-1);
 }
 
 .top-menu {
@@ -89,7 +94,8 @@ h2 {
 .panel {
 	width: 100%;
 	border: var(--border-thin) solid var(--c-border);
-	border-radius: var(--border-radius)
+	border-radius: var(--border-radius);
+	margin: var(--s1) 0;
 }
 
 .panel .panel-top {
@@ -198,6 +204,18 @@ h2 {
 	font-size: var(--s-1);
 }
 
+.readme .markdown {
+	padding: var(--s-2);
+}
+
+.readme .panel-top {
+	background-color: var(--c-bg);
+}
+
+.readme .markdown :first-child {
+	margin-top: 0;
+}
+
 /* history */
 .history {
 	display: block;
@@ -214,4 +232,20 @@ h2 {
 .history .children {
 	margin-left: var(--s-3);
 	border-left: 1px dashed var(--c-border);
+}
+
+/* object lookup */
+
+.object-lookup {
+	width: 33%;
+	margin: 0 auto;
+}
+
+.object-lookup form {
+	display: flex;
+	gap: var(--s-1);
+}
+
+.object-lookup input {
+	flex-grow: 1;
 }
