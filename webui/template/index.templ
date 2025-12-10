@@ -1,0 +1,27 @@
+package template
+
+templ Index() {
+	@BaseLayout() {
+		<div class="object-lookup">
+			<h2>Find an object</h2>
+			<form id="searchForm">
+				<input type="text"
+					id="objectId"
+					name="objectId"
+					placeholder="Object ID"
+					class=""
+					required
+				/>
+				<button type="submit">→</button>
+			</form>
+		</div>
+		<script>
+			document.getElementById('searchForm').addEventListener('submit', function(e) {
+				e.preventDefault();
+				const objectId = document.getElementById('objectId').value;
+				const encodedId = encodeURIComponent(objectId);
+				window.location.href = `/object/${encodedId}/head/`;
+			});
+		</script>
+	}
+}

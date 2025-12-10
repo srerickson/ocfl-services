@@ -1,0 +1,114 @@
+package template
+
+import (
+	"github.com/srerickson/ocfl-go"
+	"github.com/srerickson/ocfl-services/webui/utils"
+	"time"
+)
+
+type ObjectFiles struct {
+	ObjectID         string
+	VersionRef       string // version ref from request url
+	CurrentPath      string
+	DigestAlgorithm  string
+	Version          VersionBrief
+	DirectoryEntries []*DirectoryEntry
+	ReadmeHref       string
+}
+
+type DirectoryEntry struct {
+	Name    string        // Dir entry name (base)
+	Href    templ.SafeURL // Dir entry name link
+	Size    int64         // Size in bytes (if HasSize)
+	HasSize bool          // Size is set
+	Modtime time.Time     // Entry modification time
+	Digest  string        // Entry digest (for files)
+	IsDir   bool
+}
+
+type VersionBrief struct {
+	VNum     ocfl.VNum
+	Message  string
+	UserName string
+	UserAddr string
+	Created  time.Time
+}
+
+templ ObjectFilesPage(page *ObjectFiles) {
+	@BaseLayout() {
+		<h2 class="object-id">{ page.ObjectID }</h2>
+		<div class="files panel">
+			<div class="breadcrumb panel-top">
+				<div class="path">
+					<a class="version-ref" href={ utils.LinkObjectPath(page.ObjectID, page.VersionRef, ".", true) }>
+						{ page.VersionRef }
+					</a>
+					for crumbName, crumbPath := range utils.Breadcrumb(page.CurrentPath) {
+						<a href={ utils.LinkObjectPath(page.ObjectID, page.VersionRef, crumbPath, true) }>
+							<span class="mx-1">/</span>
+							{ crumbName }
+						</a>
+					}
+				</div>
+				<a href="/history" class="history">
+					@icon("clock")
+					<div class="created">2025-04-2</div>
+				</a>
+			</div>
+			<div class="panel-body">
+				<table>
+					<tbody>
+						for _, entry := range page.DirectoryEntries {
+							@directoryEntryRow(entry)
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		if page.ReadmeHref != "" {
+			@readmeMD(page.ReadmeHref)
+		}
+	}
+}
+
+templ readmeMD(readmeHref string) {
+	if readmeHref != "" {
+		<div class="panel readme">
+			<div class="panel-top">README</div>
+			<div class="panel-body">
+				<article class="prose markdown" hx-get={ readmeHref } hx-trigger="load"></article>
+			</div>
+		</div>
+	}
+}
+
+templ directoryEntryRow(row *DirectoryEntry) {
+	<tr>
+		<td>
+			<div class="filename">
+				if row.IsDir {
+					@icon("dir")
+				} else {
+					@icon("file")
+				}
+				<a href={ row.Href } class="file-name">{ row.Name }</a>
+			</div>
+		</td>
+		<td>
+			if !row.Modtime.IsZero() {
+				<span class="modtime">{ utils.RelativeDate(row.Modtime) }</span>
+			}
+		</td>
+		<td>
+			if row.HasSize {
+				<span class="bytes">{ utils.FileSize(row.Size) }</span>
+			}
+		</td>
+		<td>
+			if row.Digest != "" {
+				<span class="digest">{ utils.ShortDigest(row.Digest) }</span>
+			}
+		</td>
+	</tr>
+}

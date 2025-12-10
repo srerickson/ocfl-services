@@ -11,15 +11,9 @@
   },
   "license": "MIT",
   "author": "Seth Erickson",
-  "scripts": {
-    "build:js": "esbuild ./webui/static/src/app.js --bundle --minify --outfile=./webui/static/dst/app.js",
-    "build:css": "tailwindcss -i ./webui/static/src/app.css -o ./webui/static/dst/app.css --minify"
-  },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.1.17",
-    "@tailwindcss/typography": "0.5.19",
     "esbuild": "0.27.0",
     "htmx.org": "^2.0.8",
-    "tailwindcss": "^4.1.17"
+    "just-install": "^2.0.2"
   }
 }
