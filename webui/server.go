@@ -190,10 +190,6 @@ func HandleGetObjectFiles(svc *access.Service) http.HandlerFunc {
 			if p.ver.Num() < 1 {
 				p.ver = obj.Head()
 			}
-			if _, err := svc.GetVersionInfo(ctx, p.objID, p.ver.Num()); err != nil {
-				logErr(w, r, p, err)
-				return
-			}
 			entries, err := svc.ReadVersionDir(ctx, p.objID, p.ver.Num(), p.path)
 			if err != nil {
 				logErr(w, r, p, err)

@@ -801,27 +801,23 @@ func TestGetVersionChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if changes.FromVnum != 1 || changes.ToVnum != 2 {
-			t.Errorf("got FromVersion=%d ToVersion=%d, want 1, 2", changes.FromVnum, changes.ToVnum)
-		}
-
-		if len(changes.Changes) != 2 {
-			t.Fatalf("got %d changes, want 2", len(changes.Changes))
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes))
 		}
 
 		// Results should be sorted by path
-		if changes.Changes[0].Path != "b.txt" {
-			t.Errorf("got first change path=%q, want 'b.txt'", changes.Changes[0].Path)
+		if changes[0].Path != "b.txt" {
+			t.Errorf("got first change path=%q, want 'b.txt'", changes[0].Path)
 		}
-		if changes.Changes[0].ModType != ocflite.FileModified {
-			t.Errorf("got first change type=%v, want ChangeTypeModified", changes.Changes[0].ModType)
+		if changes[0].ModType != ocflite.FileModified {
+			t.Errorf("got first change type=%v, want ChangeTypeModified", changes[0].ModType)
 		}
 
-		if changes.Changes[1].Path != "c.txt" {
-			t.Errorf("got second change path=%q, want 'c.txt'", changes.Changes[1].Path)
+		if changes[1].Path != "c.txt" {
+			t.Errorf("got second change path=%q, want 'c.txt'", changes[1].Path)
 		}
-		if changes.Changes[1].ModType != ocflite.FileAdded {
-			t.Errorf("got second change type=%v, want ChangeTypeAdded", changes.Changes[1].ModType)
+		if changes[1].ModType != ocflite.FileAdded {
+			t.Errorf("got second change type=%v, want ChangeTypeAdded", changes[1].ModType)
 		}
 	})
 
@@ -842,24 +838,20 @@ func TestGetVersionChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if changes.FromVnum != 0 || changes.ToVnum != 2 {
-			t.Errorf("got FromVersion=%d ToVersion=%d, want 0, 2", changes.FromVnum, changes.ToVnum)
-		}
-
-		if len(changes.Changes) != 2 {
-			t.Fatalf("got %d changes, want 2", len(changes.Changes))
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes))
 		}
 
 		// All should be added
-		for i, change := range changes.Changes {
+		for i, change := range changes {
 			if change.ModType != ocflite.FileAdded {
 				t.Errorf("change %d: got type=%v, want ChangeTypeAdded", i, change.ModType)
 			}
 		}
 
 		// Check sorted
-		if changes.Changes[0].Path != "a.txt" || changes.Changes[1].Path != "b.txt" {
-			t.Errorf("changes not sorted correctly: got [%q, %q]", changes.Changes[0].Path, changes.Changes[1].Path)
+		if changes[0].Path != "a.txt" || changes[1].Path != "b.txt" {
+			t.Errorf("changes not sorted correctly: got [%q, %q]", changes[0].Path, changes[1].Path)
 		}
 	})
 
@@ -878,11 +870,11 @@ func TestGetVersionChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(changes.Changes) != 2 {
-			t.Fatalf("got %d changes, want 2", len(changes.Changes))
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes))
 		}
 
-		for i, change := range changes.Changes {
+		for i, change := range changes {
 			if change.ModType != ocflite.FileAdded {
 				t.Errorf("change %d: got type=%v, want ChangeTypeAdded", i, change.ModType)
 			}
@@ -904,11 +896,11 @@ func TestGetVersionChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(changes.Changes) != 2 {
-			t.Fatalf("got %d changes, want 2", len(changes.Changes))
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes))
 		}
 
-		for i, change := range changes.Changes {
+		for i, change := range changes {
 			if change.ModType != ocflite.FileDeleted {
 				t.Errorf("change %d: got type=%v, want ChangeTypeDeleted", i, change.ModType)
 			}
@@ -932,12 +924,8 @@ func TestGetVersionChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(changes.Changes) != 0 {
-			t.Errorf("got %d changes, want 0", len(changes.Changes))
-		}
-
-		if changes.FromVnum != 2 || changes.ToVnum != 2 {
-			t.Errorf("got FromVersion=%d ToVersion=%d, want 2, 2", changes.FromVnum, changes.ToVnum)
+		if len(changes) != 0 {
+			t.Errorf("got %d changes, want 0", len(changes))
 		}
 	})
 
@@ -964,13 +952,13 @@ func TestGetVersionChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(forward.Changes) != 2 || len(reverse.Changes) != 2 {
-			t.Fatalf("got %d forward and %d reverse changes, want 2, 2", len(forward.Changes), len(reverse.Changes))
+		if len(forward) != 2 || len(reverse) != 2 {
+			t.Fatalf("got %d forward and %d reverse changes, want 2, 2", len(forward), len(reverse))
 		}
 
 		// In forward: a.txt deleted, b.txt added
 		// In reverse: a.txt added, b.txt deleted
-		for _, change := range forward.Changes {
+		for _, change := range forward {
 			if change.Path == "a.txt" && change.ModType != ocflite.FileDeleted {
 				t.Errorf("forward: a.txt should be deleted")
 			}
@@ -979,7 +967,7 @@ func TestGetVersionChanges(t *testing.T) {
 			}
 		}
 
-		for _, change := range reverse.Changes {
+		for _, change := range reverse {
 			if change.Path == "a.txt" && change.ModType != ocflite.FileAdded {
 				t.Errorf("reverse: a.txt should be added")
 			}
@@ -1014,13 +1002,13 @@ func TestGetVersionChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(changes.Changes) != 3 {
-			t.Fatalf("got %d changes, want 3", len(changes.Changes))
+		if len(changes) != 3 {
+			t.Fatalf("got %d changes, want 3", len(changes))
 		}
 
 		// Verify each change
 		changeMap := make(map[string]ocflite.ModType)
-		for _, change := range changes.Changes {
+		for _, change := range changes {
 			changeMap[change.Path] = change.ModType
 		}
 
@@ -1084,12 +1072,12 @@ func TestGetVersionChanges(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(changes.Changes) != 2 {
-			t.Fatalf("got %d changes, want 2 (rename appears as delete+add)", len(changes.Changes))
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2 (rename appears as delete+add)", len(changes))
 		}
 
 		changeMap := make(map[string]ocflite.ModType)
-		for _, change := range changes.Changes {
+		for _, change := range changes {
 			changeMap[change.Path] = change.ModType
 		}
 
@@ -1120,10 +1108,10 @@ func TestGetVersionChanges(t *testing.T) {
 		}
 
 		// Verify sorted order
-		for i := 1; i < len(changes.Changes); i++ {
-			if changes.Changes[i-1].Path >= changes.Changes[i].Path {
+		for i := 1; i < len(changes); i++ {
+			if changes[i-1].Path >= changes[i].Path {
 				t.Errorf("changes not sorted: %q >= %q at positions %d, %d",
-					changes.Changes[i-1].Path, changes.Changes[i].Path, i-1, i)
+					changes[i-1].Path, changes[i].Path, i-1, i)
 			}
 		}
 	})

@@ -156,12 +156,6 @@ type FileChange struct {
 	ModType ModType
 }
 
-// VersionChanges represents the differences between two versions of an OCFL object.
-type VersionChanges struct {
-	FromVnum int           // lower version for comparison (0 == empty version state)
-	ToVnum   int           // higher version for comparison
-	Changes  []*FileChange // changed files sorted by name
-}
 
 // Migrate creates tables in a sqlite database used by the package
 func Migrate(conn *sqlite.Conn) error {
@@ -499,8 +493,8 @@ func GetVersionState(conn *sqlite.Conn, root string, objID string, vn int) (Dige
 // The changes include files that were added, modified, or deleted when moving
 // from fromVN to toVN. If fromVN is 0, all files in toVN are considered added.
 // If fromVN or toVN are invalid, an error is returned. If fromVN == toVN, an
-// empty VersionChanges is returned with no error.
-func GetVersionChanges(conn *sqlite.Conn, root string, objID string, fromVN int, toVN int) (*VersionChanges, error) {
+// empty slice is returned with no error.
+func GetVersionChanges(conn *sqlite.Conn, root string, objID string, fromVN int, toVN int) ([]*FileChange, error) {
 	// Validate inputs
 	if fromVN < 0 || toVN < 1 {
 		return nil, fmt.Errorf("invalid version numbers: from=%d, to=%d", fromVN, toVN)
@@ -520,11 +514,7 @@ func GetVersionChanges(conn *sqlite.Conn, root string, objID string, fromVN int,
 
 	// Handle same version
 	if fromVN == toVN {
-		return &VersionChanges{
-			FromVnum: fromVN,
-			ToVnum:   toVN,
-			Changes:  []*FileChange{},
-		}, nil
+		return []*FileChange{}, nil
 	}
 
 	// Get version states
@@ -547,11 +537,7 @@ func GetVersionChanges(conn *sqlite.Conn, root string, objID string, fromVN int,
 	toPaths := toState.PathMap()
 
 	// Compare and categorize changes
-	changes := &VersionChanges{
-		FromVnum: fromVN,
-		ToVnum:   toVN,
-		Changes:  []*FileChange{},
-	}
+	var changes []*FileChange
 
 	// Find added and modified files
 	for path, toDigest := range toPaths {
@@ -559,13 +545,13 @@ func GetVersionChanges(conn *sqlite.Conn, root string, objID string, fromVN int,
 
 		if !existed {
 			// File was added
-			changes.Changes = append(changes.Changes, &FileChange{
+			changes = append(changes, &FileChange{
 				Path:    path,
 				ModType: FileAdded,
 			})
 		} else if fromDigest != toDigest {
 			// File was modified
-			changes.Changes = append(changes.Changes, &FileChange{
+			changes = append(changes, &FileChange{
 				Path:    path,
 				ModType: FileModified,
 			})
@@ -576,7 +562,7 @@ func GetVersionChanges(conn *sqlite.Conn, root string, objID string, fromVN int,
 	for path := range fromPaths {
 		if _, exists := toPaths[path]; !exists {
 			// File was deleted
-			changes.Changes = append(changes.Changes, &FileChange{
+			changes = append(changes, &FileChange{
 				Path:    path,
 				ModType: FileDeleted,
 			})
@@ -584,7 +570,7 @@ func GetVersionChanges(conn *sqlite.Conn, root string, objID string, fromVN int,
 	}
 
 	// Sort results for consistency
-	slices.SortFunc(changes.Changes, func(a, b *FileChange) int {
+	slices.SortFunc(changes, func(a, b *FileChange) int {
 		if a.Path < b.Path {
 			return -1
 		}

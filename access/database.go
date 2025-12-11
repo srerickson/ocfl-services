@@ -38,6 +38,10 @@ type Database interface {
 	// object's most recent version is used.
 	GetObjectVersion(ctx context.Context, rootID string, objID string, vn int) (VersionInfo, error)
 
+	// GetObjectVersionChanges returns list of VersionFileChange values
+	// representing changes from fromV to toV versions.
+	GetObjectVersionChanges(ctx context.Context, rootID string, objID string, fromV, toV int) ([]VersionFileChange, error)
+
 	// ListObjectVersions
 	ListObjectVersions(ctx context.Context, rootID string, objdID string) ([]VersionInfo, error)
 
@@ -112,4 +116,9 @@ type VersionDirEntry interface {
 	Size() int64
 	HasSize() bool
 	IsDir() bool
+}
+
+type VersionFileChange interface {
+	Path() string // file path
+	Type() string // "added", "modified", "deleted"
 }
