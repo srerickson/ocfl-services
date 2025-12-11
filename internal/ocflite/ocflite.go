@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"iter"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,6 +15,15 @@ import (
 )
 
 var ErrNotFound = errors.New("not found")
+
+// ModType represents the type of change for a file between versions.
+type ModType uint8
+
+const (
+	FileAdded ModType = iota
+	FileModified
+	FileDeleted
+)
 
 //go:embed migrate.sql
 var migrateSQL string
@@ -28,7 +38,7 @@ type Object struct {
 	InventoryDigest string // root inventory digest
 	DigestAlgorithm string // root inventory alg
 	Versions        []*Version
-	VPadding        int // padding for object's version numbering scheme
+	Vpadding        int // padding for object's version numbering scheme
 	Manifest        DigestMap
 }
 
@@ -38,7 +48,7 @@ type ObjectBrief struct {
 	DigestAlgorithm string    // root inventory alg
 	InventoryDigest string    // root inventory digest
 	Head            int       // object's most recent version number
-	VPadding        int       // padding for object's version numbering scheme
+	Vpadding        int       // padding for object's version numbering scheme
 	CreatedAt       time.Time // timestamp for first version
 	UpdatedAt       time.Time // timestamp for most recent version
 	IndexedAt       time.Time // time for last database update
@@ -64,8 +74,8 @@ type Version struct {
 }
 
 type VersionBrief struct {
-	VNum        int       // version number index (1,2,3..)
-	VPadding    int       // version number padding
+	Vnum        int       // version number index (1,2,3..)
+	Vpadding    int       // version number padding
 	StateDigest string    // sha512 of version state
 	Message     string    // version message
 	UserName    string    // version user name (may be "")
@@ -137,6 +147,22 @@ type VersionFileInfo struct {
 	isDeleted bool
 }
 
+// FileChange represents a file that changed between versions.
+type FileChange struct {
+	// Path is the logical path in the version state
+	Path string
+
+	// ModType is the type of change (added/modified/deleted)
+	ModType ModType
+}
+
+// VersionChanges represents the differences between two versions of an OCFL object.
+type VersionChanges struct {
+	FromVnum int           // lower version for comparison (0 == empty version state)
+	ToVnum   int           // higher version for comparison
+	Changes  []*FileChange // changed files sorted by name
+}
+
 // Migrate creates tables in a sqlite database used by the package
 func Migrate(conn *sqlite.Conn) error {
 	if err := sqlitex.ExecuteScript(conn, migrateSQL, nil); err != nil {
@@ -179,7 +205,7 @@ func SetObject(conn *sqlite.Conn, root string, obj *Object) error {
 			root,
 			obj.ID,
 			obj.StoragePath,
-			obj.VPadding,
+			obj.Vpadding,
 			obj.DigestAlgorithm,
 			obj.InventoryDigest,
 			time.Now().Unix(),
@@ -241,7 +267,7 @@ func GetObjectBrief(conn *sqlite.Conn, root string, objID string) (*ObjectBrief,
 				StoragePath:     stmt.GetText("storage_path"),
 				DigestAlgorithm: stmt.GetText("alg"),
 				Head:            int(stmt.GetInt64("head")),
-				VPadding:        int(stmt.GetInt64("padding")),
+				Vpadding:        int(stmt.GetInt64("padding")),
 				InventoryDigest: stmt.GetText("inventory_digest"),
 				IndexedAt:       time.Unix(stmt.GetInt64("indexed_at"), 0),
 				CreatedAt:       time.Unix(stmt.GetInt64("created_at"), 0),
@@ -274,7 +300,7 @@ func GetObjectBriefByPath(conn *sqlite.Conn, root string, storagePath string) (*
 				StoragePath:     storagePath,
 				DigestAlgorithm: stmt.GetText("alg"),
 				Head:            int(stmt.GetInt64("head")),
-				VPadding:        int(stmt.GetInt64("padding")),
+				Vpadding:        int(stmt.GetInt64("padding")),
 				InventoryDigest: stmt.GetText("inventory_digest"),
 				IndexedAt:       time.Unix(stmt.GetInt64("indexed_at"), 0),
 				CreatedAt:       time.Unix(stmt.GetInt64("created_at"), 0),
@@ -305,7 +331,7 @@ func ListObjects(conn *sqlite.Conn, root string, pageSize int, offset int) ([]*O
 				StoragePath:     stmt.GetText("storage_path"),
 				DigestAlgorithm: stmt.GetText("alg"),
 				Head:            int(stmt.GetInt64("head")),
-				VPadding:        int(stmt.GetInt64("padding")),
+				Vpadding:        int(stmt.GetInt64("padding")),
 				InventoryDigest: stmt.GetText("inventory_digest"),
 				IndexedAt:       time.Unix(stmt.GetInt64("indexed_at"), 0),
 				CreatedAt:       time.Unix(stmt.GetInt64("created_at"), 0),
@@ -407,8 +433,8 @@ func GetVersion(conn *sqlite.Conn, root, objID string, vn int) (*VersionBrief, e
 		Args: []any{root, objID, vn},
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			v = &VersionBrief{
-				VNum:        vn,
-				VPadding:    int(stmt.GetInt64("padding")),
+				Vnum:        vn,
+				Vpadding:    int(stmt.GetInt64("padding")),
 				StateDigest: stmt.GetText("state_digest"),
 				Message:     stmt.GetText("message"),
 				UserName:    stmt.GetText("user_name"),
@@ -437,8 +463,8 @@ func ListVersions(conn *sqlite.Conn, root, objID string) ([]*VersionBrief, error
 		Args: args,
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			versions = append(versions, &VersionBrief{
-				VNum:        int(stmt.GetInt64("vnum")),
-				VPadding:    int(stmt.GetInt64("padding")),
+				Vnum:        int(stmt.GetInt64("vnum")),
+				Vpadding:    int(stmt.GetInt64("padding")),
 				StateDigest: stmt.GetText("state_digest"),
 				Message:     stmt.GetText("message"),
 				UserName:    stmt.GetText("user_name"),
@@ -467,6 +493,108 @@ func GetVersionState(conn *sqlite.Conn, root string, objID string, vn int) (Dige
 		}
 	}
 	return state, nil
+}
+
+// GetVersionChanges compares two versions and returns the changes between them.
+// The changes include files that were added, modified, or deleted when moving
+// from fromVN to toVN. If fromVN is 0, all files in toVN are considered added.
+// If fromVN or toVN are invalid, an error is returned. If fromVN == toVN, an
+// empty VersionChanges is returned with no error.
+func GetVersionChanges(conn *sqlite.Conn, root string, objID string, fromVN int, toVN int) (*VersionChanges, error) {
+	// Validate inputs
+	if fromVN < 0 || toVN < 1 {
+		return nil, fmt.Errorf("invalid version numbers: from=%d, to=%d", fromVN, toVN)
+	}
+
+	// Verify toVN exists
+	if _, err := GetVersion(conn, root, objID, toVN); err != nil {
+		return nil, fmt.Errorf("to version %d: %w", toVN, err)
+	}
+
+	// Verify fromVN exists (if not 0)
+	if fromVN > 0 {
+		if _, err := GetVersion(conn, root, objID, fromVN); err != nil {
+			return nil, fmt.Errorf("from version %d: %w", fromVN, err)
+		}
+	}
+
+	// Handle same version
+	if fromVN == toVN {
+		return &VersionChanges{
+			FromVnum: fromVN,
+			ToVnum:   toVN,
+			Changes:  []*FileChange{},
+		}, nil
+	}
+
+	// Get version states
+	var fromPaths PathMap
+	if fromVN == 0 {
+		// fromVN == 0 represents "no version" - use empty PathMap
+		fromPaths = make(PathMap)
+	} else {
+		fromState, err := GetVersionState(conn, root, objID, fromVN)
+		if err != nil {
+			return nil, fmt.Errorf("getting from state: %w", err)
+		}
+		fromPaths = fromState.PathMap()
+	}
+
+	toState, err := GetVersionState(conn, root, objID, toVN)
+	if err != nil {
+		return nil, fmt.Errorf("getting to state: %w", err)
+	}
+	toPaths := toState.PathMap()
+
+	// Compare and categorize changes
+	changes := &VersionChanges{
+		FromVnum: fromVN,
+		ToVnum:   toVN,
+		Changes:  []*FileChange{},
+	}
+
+	// Find added and modified files
+	for path, toDigest := range toPaths {
+		fromDigest, existed := fromPaths[path]
+
+		if !existed {
+			// File was added
+			changes.Changes = append(changes.Changes, &FileChange{
+				Path:    path,
+				ModType: FileAdded,
+			})
+		} else if fromDigest != toDigest {
+			// File was modified
+			changes.Changes = append(changes.Changes, &FileChange{
+				Path:    path,
+				ModType: FileModified,
+			})
+		}
+	}
+
+	// Find deleted files
+	for path := range fromPaths {
+		if _, exists := toPaths[path]; !exists {
+			// File was deleted
+			changes.Changes = append(changes.Changes, &FileChange{
+				Path:    path,
+				ModType: FileDeleted,
+			})
+		}
+	}
+
+	// Sort results for consistency
+	slices.SortFunc(changes.Changes, func(a, b *FileChange) int {
+		if a.Path < b.Path {
+			return -1
+		}
+		if a.Path > b.Path {
+			return 1
+		}
+		return 0
+	})
+
+	return changes, nil
 }
 
 // ReadVersionDir gets entries for a directory in an object state.

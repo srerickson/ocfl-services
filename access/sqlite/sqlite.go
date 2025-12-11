@@ -255,7 +255,7 @@ func (db *DB) setObject(ctx context.Context, rootID string, obj *ocfl.Object) (e
 	objInput := &ocflite.Object{
 		ID:              obj.ID(),
 		StoragePath:     obj.Path(),
-		VPadding:        obj.Head().Padding(),
+		Vpadding:        obj.Head().Padding(),
 		DigestAlgorithm: obj.DigestAlgorithm().ID(),
 		InventoryDigest: obj.InventoryDigest(),
 		Manifest:        ocflite.DigestMap(obj.Manifest()),
@@ -340,7 +340,7 @@ type objectInfo struct {
 
 func (o *objectInfo) ID() string              { return o.obj.ID }
 func (o *objectInfo) StoragePath() string     { return o.obj.StoragePath }
-func (o *objectInfo) Head() ocfl.VNum         { return ocfl.V(o.obj.Head, o.obj.VPadding) }
+func (o *objectInfo) Head() ocfl.VNum         { return ocfl.V(o.obj.Head, o.obj.Vpadding) }
 func (o *objectInfo) Alg() string             { return o.obj.DigestAlgorithm }
 func (o *objectInfo) InventoryDigest() string { return o.obj.InventoryDigest }
 func (o *objectInfo) CreatedAt() time.Time    { return o.obj.CreatedAt }
@@ -353,7 +353,7 @@ type versionInfo struct {
 
 var _ access.VersionInfo = (*versionInfo)(nil)
 
-func (v *versionInfo) VNum() ocfl.VNum    { return ocfl.V(v.ver.VNum, v.ver.VPadding) }
+func (v *versionInfo) VNum() ocfl.VNum    { return ocfl.V(v.ver.Vnum, v.ver.Vpadding) }
 func (v *versionInfo) Message() string    { return v.ver.Message }
 func (v *versionInfo) UserName() string   { return v.ver.UserName }
 func (v *versionInfo) UserAddr() string   { return v.ver.UserAddr }

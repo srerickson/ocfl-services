@@ -84,7 +84,7 @@ func TestObject(t *testing.T) {
 				DigestAlgorithm: objInput.DigestAlgorithm,
 				InventoryDigest: objInput.InventoryDigest,
 				Head:            len(objInput.Versions),
-				VPadding:        objInput.VPadding,
+				Vpadding:        objInput.Vpadding,
 				CreatedAt:       objInput.Versions[0].Created,
 				UpdatedAt:       objInput.Versions[2].Created,
 				IndexedAt:       got.IndexedAt, // ignored
@@ -115,7 +115,7 @@ func TestObject(t *testing.T) {
 				DigestAlgorithm: objInput.DigestAlgorithm,
 				InventoryDigest: objInput.InventoryDigest,
 				Head:            len(objInput.Versions),
-				VPadding:        objInput.VPadding,
+				Vpadding:        objInput.Vpadding,
 				CreatedAt:       objInput.Versions[0].Created,
 				UpdatedAt:       objInput.Versions[2].Created,
 				IndexedAt:       got.IndexedAt, // ignored
@@ -776,6 +776,359 @@ func TestTouchObject(t *testing.T) {
 	})
 }
 
+func TestGetVersionChanges(t *testing.T) {
+	conn := testConn(t)
+	rootName := "test"
+
+	t.Run("basic changes", func(t *testing.T) {
+		// v1: {a.txt: content1, b.txt: content2}
+		// v2: {a.txt: content1, b.txt: content3, c.txt: content4}
+		// Expected: b.txt modified, c.txt added
+		obj := createTestObjectWithContent(t, conn, rootName, "obj1",
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content3",
+				"c.txt": "content4",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if changes.FromVnum != 1 || changes.ToVnum != 2 {
+			t.Errorf("got FromVersion=%d ToVersion=%d, want 1, 2", changes.FromVnum, changes.ToVnum)
+		}
+
+		if len(changes.Changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes.Changes))
+		}
+
+		// Results should be sorted by path
+		if changes.Changes[0].Path != "b.txt" {
+			t.Errorf("got first change path=%q, want 'b.txt'", changes.Changes[0].Path)
+		}
+		if changes.Changes[0].ModType != ocflite.FileModified {
+			t.Errorf("got first change type=%v, want ChangeTypeModified", changes.Changes[0].ModType)
+		}
+
+		if changes.Changes[1].Path != "c.txt" {
+			t.Errorf("got second change path=%q, want 'c.txt'", changes.Changes[1].Path)
+		}
+		if changes.Changes[1].ModType != ocflite.FileAdded {
+			t.Errorf("got second change type=%v, want ChangeTypeAdded", changes.Changes[1].ModType)
+		}
+	})
+
+	t.Run("from version 0", func(t *testing.T) {
+		// v0 (no version) -> v2: all files in v2 should be added
+		obj := createTestObjectWithContent(t, conn, rootName, "obj2",
+			map[string]string{
+				"a.txt": "content1",
+			},
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 0, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if changes.FromVnum != 0 || changes.ToVnum != 2 {
+			t.Errorf("got FromVersion=%d ToVersion=%d, want 0, 2", changes.FromVnum, changes.ToVnum)
+		}
+
+		if len(changes.Changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes.Changes))
+		}
+
+		// All should be added
+		for i, change := range changes.Changes {
+			if change.ModType != ocflite.FileAdded {
+				t.Errorf("change %d: got type=%v, want ChangeTypeAdded", i, change.ModType)
+			}
+		}
+
+		// Check sorted
+		if changes.Changes[0].Path != "a.txt" || changes.Changes[1].Path != "b.txt" {
+			t.Errorf("changes not sorted correctly: got [%q, %q]", changes.Changes[0].Path, changes.Changes[1].Path)
+		}
+	})
+
+	t.Run("all files added", func(t *testing.T) {
+		// v1: empty, v2: has files
+		obj := createTestObjectWithContent(t, conn, rootName, "obj3",
+			map[string]string{},
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes.Changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes.Changes))
+		}
+
+		for i, change := range changes.Changes {
+			if change.ModType != ocflite.FileAdded {
+				t.Errorf("change %d: got type=%v, want ChangeTypeAdded", i, change.ModType)
+			}
+		}
+	})
+
+	t.Run("all files deleted", func(t *testing.T) {
+		// v1: has files, v2: empty
+		obj := createTestObjectWithContent(t, conn, rootName, "obj4",
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+			map[string]string{},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes.Changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes.Changes))
+		}
+
+		for i, change := range changes.Changes {
+			if change.ModType != ocflite.FileDeleted {
+				t.Errorf("change %d: got type=%v, want ChangeTypeDeleted", i, change.ModType)
+			}
+		}
+	})
+
+	t.Run("same version", func(t *testing.T) {
+		// v2 -> v2: should have no changes
+		obj := createTestObjectWithContent(t, conn, rootName, "obj5",
+			map[string]string{
+				"a.txt": "content1",
+			},
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 2, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes.Changes) != 0 {
+			t.Errorf("got %d changes, want 0", len(changes.Changes))
+		}
+
+		if changes.FromVnum != 2 || changes.ToVnum != 2 {
+			t.Errorf("got FromVersion=%d ToVersion=%d, want 2, 2", changes.FromVnum, changes.ToVnum)
+		}
+	})
+
+	t.Run("reverse comparison", func(t *testing.T) {
+		// v2 -> v1: added and deleted should be swapped
+		obj := createTestObjectWithContent(t, conn, rootName, "obj6",
+			map[string]string{
+				"a.txt": "content1",
+			},
+			map[string]string{
+				"b.txt": "content2",
+			},
+		)
+
+		// Forward: v1 -> v2
+		forward, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Reverse: v2 -> v1
+		reverse, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 2, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(forward.Changes) != 2 || len(reverse.Changes) != 2 {
+			t.Fatalf("got %d forward and %d reverse changes, want 2, 2", len(forward.Changes), len(reverse.Changes))
+		}
+
+		// In forward: a.txt deleted, b.txt added
+		// In reverse: a.txt added, b.txt deleted
+		for _, change := range forward.Changes {
+			if change.Path == "a.txt" && change.ModType != ocflite.FileDeleted {
+				t.Errorf("forward: a.txt should be deleted")
+			}
+			if change.Path == "b.txt" && change.ModType != ocflite.FileAdded {
+				t.Errorf("forward: b.txt should be added")
+			}
+		}
+
+		for _, change := range reverse.Changes {
+			if change.Path == "a.txt" && change.ModType != ocflite.FileAdded {
+				t.Errorf("reverse: a.txt should be added")
+			}
+			if change.Path == "b.txt" && change.ModType != ocflite.FileDeleted {
+				t.Errorf("reverse: b.txt should be deleted")
+			}
+		}
+	})
+
+	t.Run("skip intermediate versions", func(t *testing.T) {
+		// v1: {a: d1, b: d2}
+		// v2: {a: d1, c: d3}  // b deleted, c added
+		// v3: {a: d4, c: d3}  // a modified
+		// Compare v1 -> v3: a modified, b deleted, c added
+		obj := createTestObjectWithContent(t, conn, rootName, "obj7",
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+			map[string]string{
+				"a.txt": "content1",
+				"c.txt": "content3",
+			},
+			map[string]string{
+				"a.txt": "content4",
+				"c.txt": "content3",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 3)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes.Changes) != 3 {
+			t.Fatalf("got %d changes, want 3", len(changes.Changes))
+		}
+
+		// Verify each change
+		changeMap := make(map[string]ocflite.ModType)
+		for _, change := range changes.Changes {
+			changeMap[change.Path] = change.ModType
+		}
+
+		if changeMap["a.txt"] != ocflite.FileModified {
+			t.Errorf("a.txt should be modified")
+		}
+		if changeMap["b.txt"] != ocflite.FileDeleted {
+			t.Errorf("b.txt should be deleted")
+		}
+		if changeMap["c.txt"] != ocflite.FileAdded {
+			t.Errorf("c.txt should be added")
+		}
+	})
+
+	t.Run("invalid from version", func(t *testing.T) {
+		obj := createTestObjectWithContent(t, conn, rootName, "obj8",
+			map[string]string{
+				"a.txt": "content1",
+			},
+		)
+
+		_, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, -1, 1)
+		if err == nil {
+			t.Error("expected error for negative fromVN")
+		}
+	})
+
+	t.Run("invalid to version", func(t *testing.T) {
+		obj := createTestObjectWithContent(t, conn, rootName, "obj9",
+			map[string]string{
+				"a.txt": "content1",
+			},
+		)
+
+		_, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 0)
+		if err == nil {
+			t.Error("expected error for toVN < 1")
+		}
+
+		_, err = ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 999)
+		if err == nil {
+			t.Error("expected error for non-existent toVN")
+		}
+	})
+
+	t.Run("file rename appears as delete and add", func(t *testing.T) {
+		// v1: {old/path.txt: digest1}
+		// v2: {new/path.txt: digest1}  // same digest, different path
+		content := "same content"
+		obj := createTestObjectWithContent(t, conn, rootName, "obj10",
+			map[string]string{
+				"old/path.txt": content,
+			},
+			map[string]string{
+				"new/path.txt": content,
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes.Changes) != 2 {
+			t.Fatalf("got %d changes, want 2 (rename appears as delete+add)", len(changes.Changes))
+		}
+
+		changeMap := make(map[string]ocflite.ModType)
+		for _, change := range changes.Changes {
+			changeMap[change.Path] = change.ModType
+		}
+
+		if changeMap["new/path.txt"] != ocflite.FileAdded {
+			t.Errorf("new/path.txt should be added")
+		}
+		if changeMap["old/path.txt"] != ocflite.FileDeleted {
+			t.Errorf("old/path.txt should be deleted")
+		}
+	})
+
+	t.Run("results are sorted", func(t *testing.T) {
+		// Create object with multiple changes in non-alphabetical order
+		obj := createTestObjectWithContent(t, conn, rootName, "obj11",
+			map[string]string{
+				"a.txt": "content1",
+			},
+			map[string]string{
+				"z.txt": "content-z",
+				"b.txt": "content-b",
+				"m.txt": "content-m",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify sorted order
+		for i := 1; i < len(changes.Changes); i++ {
+			if changes.Changes[i-1].Path >= changes.Changes[i].Path {
+				t.Errorf("changes not sorted: %q >= %q at positions %d, %d",
+					changes.Changes[i-1].Path, changes.Changes[i].Path, i-1, i)
+			}
+		}
+	})
+}
+
 func BenchmarkGetObject(b *testing.B) {
 	scenarios := []struct {
 		name     string
@@ -906,7 +1259,7 @@ func newTestObject(id string, states ...ocflite.PathMap) *ocflite.Object {
 		StoragePath:     "storage-path-" + id,
 		InventoryDigest: "inventory-digest-" + id,
 		DigestAlgorithm: "sha256",
-		VPadding:        3,
+		Vpadding:        3,
 		Manifest:        manifest,
 		Versions:        versions,
 	}
