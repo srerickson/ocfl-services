@@ -65,6 +65,7 @@ type Version struct {
 
 type VersionBrief struct {
 	VNum        int       // version number index (1,2,3..)
+	VPadding    int       // version number padding
 	StateDigest string    // sha512 of version state
 	Message     string    // version message
 	UserName    string    // version user name (may be "")
@@ -407,6 +408,7 @@ func GetVersion(conn *sqlite.Conn, root, objID string, vn int) (*VersionBrief, e
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			v = &VersionBrief{
 				VNum:        vn,
+				VPadding:    int(stmt.GetInt64("padding")),
 				StateDigest: stmt.GetText("state_digest"),
 				Message:     stmt.GetText("message"),
 				UserName:    stmt.GetText("user_name"),
@@ -436,6 +438,7 @@ func ListVersions(conn *sqlite.Conn, root, objID string) ([]*VersionBrief, error
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			versions = append(versions, &VersionBrief{
 				VNum:        int(stmt.GetInt64("vnum")),
+				VPadding:    int(stmt.GetInt64("padding")),
 				StateDigest: stmt.GetText("state_digest"),
 				Message:     stmt.GetText("message"),
 				UserName:    stmt.GetText("user_name"),

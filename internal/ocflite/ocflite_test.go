@@ -777,7 +777,6 @@ func TestTouchObject(t *testing.T) {
 }
 
 func BenchmarkGetObject(b *testing.B) {
-	// Test scenarios: {numObjects, numVersions, numVersionFiles}
 	scenarios := []struct {
 		name     string
 		numObjs  int
@@ -813,11 +812,7 @@ func BenchmarkGetObject(b *testing.B) {
 	}
 }
 
-// BenchmarkListVersionFiles benchmarks the ListVersionFiles function with
-// various object sizes, version counts, and number of objects in the
-// repository.
 func BenchmarkListVersionFiles(b *testing.B) {
-	// Test scenarios: {numObjects, numVersions, numVersionFiles}
 	scenarios := []struct {
 		name     string
 		numObjs  int

@@ -87,6 +87,7 @@ type ContentFileInfo interface {
 // VersionInfo represents high-level information about an object version: it
 // doesn't include the version state.
 type VersionInfo interface {
+	VNum() ocfl.VNum
 	Message() string
 	UserName() string
 	UserAddr() string

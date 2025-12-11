@@ -285,23 +285,19 @@ func HandleGetObjectHistory(svc *access.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		id := r.PathValue("id")
-		obj, err := svc.SyncObject(ctx, id)
-		if err != nil {
-			logErr(w, r, id, err)
-			return
-		}
 		versions, err := svc.ListVersions(ctx, id)
 		if err != nil {
 			logErr(w, r, id, err)
 			return
 		}
+		slices.Reverse(versions) // most recent first
 		page := &template.ObjectHistory{
 			ObjectID: id,
 			Versions: make([]*template.VersionBrief, len(versions)),
 		}
 		for i, v := range versions {
 			page.Versions[i] = &template.VersionBrief{
-				VNum:     ocfl.V(i+1, obj.Head().Padding()),
+				VNum:     v.VNum(),
 				Created:  v.Created(),
 				Message:  v.Message(),
 				UserName: v.UserName(),

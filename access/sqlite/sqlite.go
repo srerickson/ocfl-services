@@ -353,6 +353,7 @@ type versionInfo struct {
 
 var _ access.VersionInfo = (*versionInfo)(nil)
 
+func (v *versionInfo) VNum() ocfl.VNum    { return ocfl.V(v.ver.VNum, v.ver.VPadding) }
 func (v *versionInfo) Message() string    { return v.ver.Message }
 func (v *versionInfo) UserName() string   { return v.ver.UserName }
 func (v *versionInfo) UserAddr() string   { return v.ver.UserAddr }
