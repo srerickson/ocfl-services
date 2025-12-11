@@ -40,7 +40,7 @@
 	--code-block-bg: var(--c-bg-alt);
 	--code-block-color: var(--c-text-1);
 	--header-height: var(--s2);
-	--border-radius: var(--s-2);
+	--border-radius: 6px;
   
 	font-family: var(--font-family);
 }
@@ -66,7 +66,37 @@ h2 {
 
 input, button {
 	font-size: var(--s0);
-	margin-bottom: var(--s-1);
+	font-family: var(--font-family);
+	padding: var(--s-2);
+	border: var(--border-thin) solid var(--c-border);
+	border-radius: var(--border-radius);
+	background-color: var(--c-bg);
+	color: var(--c-text-1);
+	line-height: var(--s0);
+}
+
+input:focus {
+	outline: 1px solid var(--c-indigo-2);
+	outline-offset: 0;
+	border-color: var(--c-indigo-2);
+}
+
+button {
+	background-color: var(--c-indigo-2);
+	color: white;
+	font-weight: 500;
+	cursor: pointer;
+	border-color: var(--c-indigo-2);
+}
+
+button:hover {
+	background-color: var(--c-indigo-1);
+	border-color: var(--c-indigo-1);
+}
+
+button:active {
+	background-color: var(--c-indigo-3);
+	border-color: var(--c-indigo-3);
 }
 
 .top-menu {
@@ -111,7 +141,6 @@ input, button {
 
 .panel .panel-body {
 	margin-top: 0;
-	padding: var(--s-2);
 }
 
 .panel-body table {
