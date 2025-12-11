@@ -17,20 +17,31 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-func testDB(t *testing.T) *sqlite.Conn {
+// newConn returns an a connection to an in-memory sqlite database for testing
+func newConn() (*sqlite.Conn, error) {
 	conn, err := sqlite.OpenConn(":memory:", sqlite.OpenReadWrite|sqlite.OpenCreate)
 	if err != nil {
-		t.Fatalf("Failed to open test database: %v", err)
+		return nil, err
 	}
 	if err := ocflite.Migrate(conn); err != nil {
+		return nil, err
+	}
+	return conn, err
+}
+
+// testConn returns sqlite connection for use in a test. The connection is
+// closed as part of the test's Cleanup().
+func testConn(t *testing.T) *sqlite.Conn {
+	conn, err := newConn()
+	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { conn.Close() })
 	return conn
 }
 
 func TestObject(t *testing.T) {
-	conn := testDB(t)
-	defer conn.Close()
+	conn := testConn(t)
 	rootName := "test"
 	numObjects := 10
 	objInputs := make([]*ocflite.Object, numObjects)
@@ -167,8 +178,7 @@ func TestObject(t *testing.T) {
 }
 
 func TestUnsetObject(t *testing.T) {
-	conn := testDB(t)
-	defer conn.Close()
+	conn := testConn(t)
 	rootName := "test"
 	// create two objects with the same content, delete one of them.
 	objID1, objID2 := "object-01", "object-02"
@@ -237,8 +247,7 @@ func TestUnsetObject(t *testing.T) {
 }
 
 func TestObjectVersions(t *testing.T) {
-	conn := testDB(t)
-	defer conn.Close()
+	conn := testConn(t)
 	rootName := "root-01"
 	objID := "object-01"
 	runVersionTest := func(t *testing.T, states []ocflite.PathMap) {
@@ -320,8 +329,7 @@ func TestObjectVersions(t *testing.T) {
 func TestReadVersionDir(t *testing.T) {
 
 	t.Run("multiple objects same file", func(t *testing.T) {
-		conn := testDB(t)
-		defer conn.Close()
+		conn := testConn(t)
 		rootName := "root"
 		for i := range 9 {
 			objID := fmt.Sprintf("object-%d", i)
@@ -514,8 +522,7 @@ func TestReadVersionDir(t *testing.T) {
 	}
 	for tname, tt := range tests {
 		t.Run(tname, func(t *testing.T) {
-			conn := testDB(t)
-			defer conn.Close()
+			conn := testConn(t)
 			rootName := "root-01"
 			objID := "object-01"
 			createTestObject(t, conn, rootName, objID, tt.versions...)
@@ -562,8 +569,7 @@ func TestReadVersionDir(t *testing.T) {
 }
 
 func TestListObjects(t *testing.T) {
-	conn := testDB(t)
-	defer conn.Close()
+	conn := testConn(t)
 	rootName := "test-root"
 
 	// Create 100 objects
@@ -709,8 +715,7 @@ func TestStatVersionFile(t *testing.T) {
 	}
 	for tname, tt := range tests {
 		t.Run(tname, func(t *testing.T) {
-			conn := testDB(t)
-			defer conn.Close()
+			conn := testConn(t)
 			rootName := "root-01"
 			objID := "object-01"
 			createTestObject(t, conn, rootName, objID, tt.versions...)
@@ -742,8 +747,7 @@ func TestStatVersionFile(t *testing.T) {
 
 func TestTouchObject(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		conn := testDB(t)
-		defer conn.Close()
+		conn := testConn(t)
 		rootName := "test-root"
 		objID := "test-object"
 		createTestObject(t, conn, rootName, objID,
@@ -770,6 +774,93 @@ func TestTouchObject(t *testing.T) {
 				"want at least 3s", diff)
 		}
 	})
+}
+
+func BenchmarkGetObject(b *testing.B) {
+	// Test scenarios: {numObjects, numVersions, numVersionFiles}
+	scenarios := []struct {
+		name     string
+		numObjs  int
+		numVers  int
+		numFiles int
+	}{
+		{name: "10obj-10v-10f", numObjs: 10, numVers: 10, numFiles: 10},
+		{name: "100obj-10v-10f", numObjs: 100, numVers: 10, numFiles: 10},
+		{name: "1000obj-10v-10f", numObjs: 1000, numVers: 10, numFiles: 10},
+	}
+	for _, sc := range scenarios {
+		b.Run(sc.name, func(b *testing.B) {
+			conn, err := newConn()
+			if err != nil {
+				b.Fatal("db connection:", err)
+			}
+			defer conn.Close()
+			rootName := "bench-root"
+			ids, err := createBenchmarkObjects(conn, rootName, sc.numObjs, sc.numVers, sc.numFiles)
+			if err != nil {
+				b.Fatal("creating benchmark object:", err)
+			}
+			// Query the first object (representative of query performance)
+			objID := ids[0]
+			// Benchmark loop using new b.Loop() from Go 1.24
+			for b.Loop() {
+				_, err := ocflite.GetObjectBrief(conn, rootName, objID)
+				if err != nil {
+					b.Fatal("GetObjectBrief:", err)
+				}
+			}
+		})
+	}
+}
+
+// BenchmarkListVersionFiles benchmarks the ListVersionFiles function with
+// various object sizes, version counts, and number of objects in the
+// repository.
+func BenchmarkListVersionFiles(b *testing.B) {
+	// Test scenarios: {numObjects, numVersions, numVersionFiles}
+	scenarios := []struct {
+		name     string
+		numObjs  int
+		numVers  int
+		numFiles int
+		queryDir string
+	}{
+		{name: "10obj-10v-10f", numObjs: 10, numVers: 10, numFiles: 10, queryDir: "."},
+		{name: "100obj-10v-10f", numObjs: 100, numVers: 10, numFiles: 10, queryDir: "."},
+		{name: "1000obj-10v-10f", numObjs: 1000, numVers: 10, numFiles: 10, queryDir: "."},
+	}
+	for _, sc := range scenarios {
+		b.Run(sc.name, func(b *testing.B) {
+			conn, err := newConn()
+			if err != nil {
+				b.Fatal("db connection:", err)
+			}
+			defer conn.Close()
+			rootName := "bench-root"
+			ids, err := createBenchmarkObjects(conn, rootName, sc.numObjs, sc.numVers, sc.numFiles)
+			if err != nil {
+				b.Fatal("creating benchmark object:", err)
+			}
+			// Query the first object (representative of query performance)
+			objID := ids[0]
+			vn := sc.numVers
+			// Benchmark loop using new b.Loop() from Go 1.24
+			for b.Loop() {
+				fileCount := 0
+				for _, err := range ocflite.ListVersionFiles(conn, rootName, objID, vn, sc.queryDir) {
+					if err != nil {
+						b.Fatal("ListVersionFiles error:", err)
+					}
+					// Access file to prevent compiler optimizations
+					fileCount++
+				}
+				// Verify we got results
+				if fileCount == 0 {
+					b.Fatal("no files returned from ListVersionFiles")
+				}
+			}
+		})
+	}
 }
 
 // dirEntriesEqual compares two slices of PathInfo and reports any differences
@@ -932,96 +1023,32 @@ func countTable(t *testing.T, conn *sqlite.Conn, table string) int {
 	return count
 }
 
-// BenchmarkListVersionFiles benchmarks the ListVersionFiles function with
-// various object sizes, version counts, and number of objects in the
-// repository.
-func BenchmarkListVersionFiles(b *testing.B) {
-	// Test scenarios: {numObjects, numVersions, numVersionFiles}
-	scenarios := []struct {
-		name            string
-		numObjects      int
-		numVersions     int
-		numVersionFiles int
-		queryDir        string
-	}{
-		{name: "10obj-10v-10f", numObjects: 10, numVersions: 10, numVersionFiles: 10, queryDir: "."},
-		{name: "100obj-10v-10f", numObjects: 100, numVersions: 10, numVersionFiles: 10, queryDir: "."},
-		{name: "1000obj-10v-10f", numObjects: 1000, numVersions: 10, numVersionFiles: 10, queryDir: "."},
-		// {name: "10obj-100v-10f", numObjects: 10, numVersions: 100, numVersionFiles: 10, queryDir: "."},
-		// {name: "100obj-100v-10f", numObjects: 100, numVersions: 100, numVersionFiles: 10, queryDir: "."},
-		// {name: "1000obj-100v-10f", numObjects: 1000, numVersions: 100, numVersionFiles: 10, queryDir: "."},
-		// {name: "10obj-10v-100f", numObjects: 10, numVersions: 10, numVersionFiles: 100, queryDir: "."},
-		// {name: "100obj-10v-100f", numObjects: 100, numVersions: 10, numVersionFiles: 100, queryDir: "."},
-		// {name: "1000obj-10v-100f", numObjects: 1000, numVersions: 10, numVersionFiles: 100, queryDir: "."},
-		// {name: "10obj-100v-100f", numObjects: 10, numVersions: 100, numVersionFiles: 100, queryDir: "."},
-		// {name: "100obj-100v-100f", numObjects: 100, numVersions: 100, numVersionFiles: 100, queryDir: "."},
-		// {name: "1000obj-100v-100f", numObjects: 1000, numVersions: 100, numVersionFiles: 100, queryDir: "."},
+func createBenchmarkObjects(conn *sqlite.Conn, rootName string, numObjects int, numVersions int, numFiles int) ([]string, error) {
+	// Create multiple objects in the repository
+	ids := make([]string, numObjects)
+	for obj := range numObjects {
+		objID := fmt.Sprintf("bench-object-%d", obj)
+		ids[obj] = objID
+		// Create object with multiple versions containing files
+		versions := make([]map[string]string, numVersions)
+		for v := range numVersions {
+			content := make(map[string]string, numFiles)
+			for f := range numFiles {
+				// Create varied paths including nested
+				// directories
+				filePath := fmt.Sprintf(
+					"data/subdir/file-%d-%d.txt", v, f)
+				fileContent := fmt.Sprintf(
+					"content-obj%d-v%d-f%d", obj, v, f)
+				content[filePath] = fileContent
+			}
+			versions[v] = content
+		}
+
+		_, err := createObjectWithContent(conn, rootName, objID, versions...)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	for _, sc := range scenarios {
-		b.Run(sc.name, func(b *testing.B) {
-			// Setup: Create database and objects (runs once)
-			conn, err := sqlite.OpenConn(":memory:",
-				sqlite.OpenReadWrite|sqlite.OpenCreate)
-			if err != nil {
-				b.Fatalf("Failed to open test database: %v", err)
-			}
-			defer conn.Close()
-			if err := ocflite.Migrate(conn); err != nil {
-				b.Fatal(err)
-			}
-
-			rootName := "bench-root"
-
-			// Create multiple objects in the repository
-			for obj := range sc.numObjects {
-				objID := fmt.Sprintf("bench-object-%d", obj)
-
-				// Create object with multiple versions containing files
-				versions := make([]map[string]string, sc.numVersions)
-				for v := range sc.numVersions {
-					content := make(map[string]string,
-						sc.numVersionFiles)
-					for f := range sc.numVersionFiles {
-						// Create varied paths including nested
-						// directories
-						filePath := fmt.Sprintf(
-							"data/subdir/file-%d-%d.txt", v, f)
-						fileContent := fmt.Sprintf(
-							"content-obj%d-v%d-f%d", obj, v, f)
-						content[filePath] = fileContent
-					}
-					versions[v] = content
-				}
-
-				_, err = createObjectWithContent(conn, rootName, objID,
-					versions...)
-				if err != nil {
-					b.Fatal("creating benchmark object:", err)
-				}
-			}
-
-			// Query the first object (representative of query performance)
-			objID := "bench-object-0"
-			vn := sc.numVersions
-
-			// Benchmark loop using new b.Loop() from Go 1.24
-			for b.Loop() {
-				fileCount := 0
-				for file, err := range ocflite.ListVersionFiles(conn,
-					rootName, objID, vn, sc.queryDir) {
-					if err != nil {
-						b.Fatal("ListVersionFiles error:", err)
-					}
-					// Access file to prevent compiler optimizations
-					_ = file.Path
-					fileCount++
-				}
-				// Verify we got results
-				if fileCount == 0 {
-					b.Fatal("no files returned from ListVersionFiles")
-				}
-			}
-		})
-	}
+	return ids, nil
 }
