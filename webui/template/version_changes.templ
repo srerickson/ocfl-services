@@ -1,0 +1,100 @@
+package template
+
+import (
+	"github.com/srerickson/ocfl-services/webui/utils"
+)
+
+type VersionChanges struct {
+	ObjectID string
+	Version  *VersionBrief
+	FileTree *FileTreeNode
+}
+
+type FileTreeNode struct {
+	Name     string
+	Path     string
+	IsDir    bool
+	ModType  string
+	Children []*FileTreeNode
+}
+
+templ VersionChangesPage(page *VersionChanges) {
+	@BaseLayout() {
+		<div class="version-changes">
+			<h2>{ page.ObjectID }</h2>
+			<div class="panel">
+				<div class="panel-top">Version { page.Version.VNum.String() }</div>
+				<div class="panel-body">
+					<table>
+						<tbody>
+							<tr>
+								<td><strong>Created:</strong></td>
+								<td>{ utils.FormatDate(page.Version.Created) }</td>
+							</tr>
+							<tr>
+								<td><strong>User:</strong></td>
+								<td>{ page.Version.UserName } ({ page.Version.UserAddr })</td>
+							</tr>
+							<tr>
+								<td><strong>Message:</strong></td>
+								<td>{ page.Version.Message }</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="panel">
+				<div class="panel-top">Changed Files</div>
+				<div class="panel-body">
+					if len(page.FileTree.Children) == 0 {
+						<p>No file changes in this version</p>
+					} else {
+						<div class="history">
+							@renderFileTreeNode(page.FileTree, true)
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ renderFileTreeNode(node *FileTreeNode, isRoot bool) {
+	if !isRoot {
+		if node.IsDir {
+			<details open>
+				<summary class="node">
+					@icon("dir")
+					<span>{ node.Name }</span>
+				</summary>
+				<div class="children">
+					for _, child := range node.Children {
+						@renderFileTreeNode(child, false)
+					}
+				</div>
+			</details>
+		} else {
+			<div class="node">
+				@fileIcon(node.ModType)
+				<span>{ node.Name }</span>
+			</div>
+		}
+	} else {
+		for _, child := range node.Children {
+			@renderFileTreeNode(child, false)
+		}
+	}
+}
+
+templ fileIcon(modType string) {
+	switch modType {
+		case "added":
+			@icon("file-added")
+		case "modified":
+			@icon("file-modified")
+		case "deleted":
+			@icon("file-deleted")
+		default:
+			@icon("file")
+	}
+}

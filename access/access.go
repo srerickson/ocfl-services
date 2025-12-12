@@ -82,6 +82,19 @@ func (s *Service) ListVersions(ctx context.Context, objID string) ([]VersionInfo
 	return s.db.ListObjectVersions(ctx, s.rootID, objID)
 }
 
+// GetVersionChanges returns the list of file changes between two versions.
+func (s *Service) GetVersionChanges(ctx context.Context, objID string, fromV, toV int) ([]VersionFileChange, error) {
+	obj, err := s.SyncObject(ctx, objID)
+	if err != nil {
+		return nil, err
+	}
+	// Validate version numbers
+	if fromV < 0 || toV < 1 || toV > obj.Head().Num() {
+		return nil, fmt.Errorf("invalid version range: %w", ErrNotFound)
+	}
+	return s.db.GetObjectVersionChanges(ctx, s.rootID, objID, fromV, toV)
+}
+
 // IndexRoot indexes the all objects in the storage root. For duplicate calls,
 // the duplicate caller waits for the original to complete and receives the same
 // results.

@@ -29,7 +29,7 @@ templ ObjectHistoryPage(page *ObjectHistory) {
                     <table>
                         <tbody>
                             for _, entry := range page.Versions {
-                                @objectVersionRow(entry)
+                                @objectVersionRow(page.ObjectID, entry)
                             }
                         </tbody>
                     </table>
@@ -39,10 +39,12 @@ templ ObjectHistoryPage(page *ObjectHistory) {
     }
 }
 
-templ objectVersionRow(entry *VersionBrief){
+templ objectVersionRow(objID string, entry *VersionBrief){
     <tr>
 		<td>
-			{ entry.VNum.String() }
+			<a href={ utils.LinkVersionChanges(objID, entry.VNum.String()) }>
+				{ entry.VNum.String() }
+			</a>
 		</td>
         <td>
             { utils.FormatDate(entry.Created) }

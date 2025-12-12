@@ -28,3 +28,7 @@ func LinkObjectFiles(objID string, version string, logicalPath string, isDir boo
 func LinkObjectHistory(objID string) templ.SafeURL {
 	return templ.URL("/history/" + url.PathEscape(objID))
 }
+
+func LinkVersionChanges(objID string, version string) templ.SafeURL {
+	return templ.URL("/history/" + url.PathEscape(objID) + "/" + version)
+}
