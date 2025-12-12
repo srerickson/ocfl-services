@@ -246,6 +246,57 @@ func TestUnsetObject(t *testing.T) {
 	})
 }
 
+func TestGetObjectVersion(t *testing.T) {
+	conn := testConn(t)
+	rootName := "test"
+	numObjects := 10
+	objInputs := make([]*ocflite.Object, numObjects)
+	for i := range numObjects {
+		id := fmt.Sprintf("object-%d", i)
+		objInputs[i] = createTestObjectWithContent(t, conn, rootName, id,
+			map[string]string{
+				"file-id": id,
+				"file1":   "content-1",
+			},
+			map[string]string{
+				"file1": "content-1",
+				"file2": "content-2",
+			},
+			map[string]string{
+				"new_file1":               "content-1",
+				"file2":                   "new content-2",
+				fmt.Sprintf("file-%d", i): "file",
+			},
+		)
+	}
+	version, err := ocflite.GetVersion(conn, rootName, "object-1", 3)
+	if err != nil {
+		t.Fatal("GetVersion:", err)
+	}
+	if version.Created.IsZero() {
+		t.Error("version created time is not set")
+	}
+	if version.Message == "" {
+		t.Error("version message is not set")
+	}
+	if version.UserAddr == "" {
+		t.Error("version user address is not set")
+	}
+	if version.UserName == "" {
+		t.Error("version user name is not set")
+	}
+	if version.StateDigest == "" {
+		t.Error("version state digest is not set")
+	}
+	if version.Vnum == 0 {
+		t.Error("version vnum is not set")
+	}
+	if version.Vpadding == 0 {
+		// test object has padding
+		t.Error("version padding is not set")
+	}
+}
+
 func TestObjectVersions(t *testing.T) {
 	conn := testConn(t)
 	rootName := "root-01"

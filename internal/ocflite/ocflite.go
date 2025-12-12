@@ -156,7 +156,6 @@ type FileChange struct {
 	ModType ModType
 }
 
-
 // Migrate creates tables in a sqlite database used by the package
 func Migrate(conn *sqlite.Conn) error {
 	if err := sqlitex.ExecuteScript(conn, migrateSQL, nil); err != nil {
@@ -432,7 +431,7 @@ func GetVersion(conn *sqlite.Conn, root, objID string, vn int) (*VersionBrief, e
 				StateDigest: stmt.GetText("state_digest"),
 				Message:     stmt.GetText("message"),
 				UserName:    stmt.GetText("user_name"),
-				UserAddr:    stmt.GetText("user_addr"),
+				UserAddr:    stmt.GetText("user_address"),
 				Created:     time.Unix(stmt.GetInt64("created_at"), 0),
 			}
 			return nil
