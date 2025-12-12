@@ -315,7 +315,29 @@ func TestObjectVersions(t *testing.T) {
 				if l := len(versions); l != head {
 					t.Errorf("wrong number of versions, got=%d, exp=%d", l, head)
 				}
-				for j := range head {
+				for j, version := range versions {
+					if version.Created.IsZero() {
+						t.Error("version created time is not set")
+					}
+					if version.Message == "" {
+						t.Error("version message is not set")
+					}
+					if version.UserAddr == "" {
+						t.Error("version user address is not set")
+					}
+					if version.UserName == "" {
+						t.Error("version user name is not set")
+					}
+					if version.StateDigest == "" {
+						t.Error("version state digest is not set")
+					}
+					if version.Vnum == 0 {
+						t.Error("version vnum is not set")
+					}
+					if version.Vpadding == 0 {
+						// test object has padding
+						t.Error("version padding is not set")
+					}
 					prevState, err := ocflite.GetVersionState(conn, rootName, objID, j+1)
 					if err != nil {
 						t.Errorf("getting version %d state: %v", j+1, err)

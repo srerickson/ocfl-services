@@ -461,7 +461,7 @@ func ListVersions(conn *sqlite.Conn, root, objID string) ([]*VersionBrief, error
 				StateDigest: stmt.GetText("state_digest"),
 				Message:     stmt.GetText("message"),
 				UserName:    stmt.GetText("user_name"),
-				UserAddr:    stmt.GetText("user_addr"),
+				UserAddr:    stmt.GetText("user_address"),
 				Created:     time.Unix(stmt.GetInt64("created_at"), 0),
 			})
 			return nil
