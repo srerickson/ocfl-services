@@ -37,7 +37,7 @@ func BaseLayout() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</head><body><div class=\"top-menu\"><div class=\"server-name\"><a href=\"/\">OCFL webui</a></div></div><!-- page content --><div class=\"main\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</head><body><!-- Skip navigation link --><a href=\"#main-content\" class=\"skip-link\">Skip to main content</a><header role=\"banner\"><div class=\"top-menu\"><div class=\"server-name\"><a href=\"/\">OCFL webui</a></div></div></header><!-- page content --><main id=\"main-content\" role=\"main\" class=\"main\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -45,7 +45,7 @@ func BaseLayout() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</main></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

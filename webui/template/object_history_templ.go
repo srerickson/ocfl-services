@@ -68,7 +68,7 @@ func ObjectHistoryPage(page *ObjectHistory) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"panel\"><div class=\"panel-top\">Object History</div><div class=\"panel-body\"><table><tbody>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"panel\"><div class=\"panel-top\"><h2>Object History</h2></div><div class=\"panel-body\"><table><caption class=\"visually-hidden\">Object version history</caption> <thead><tr><th scope=\"col\">Version & Date</th><th scope=\"col\">Author</th><th scope=\"col\">Message</th><th scope=\"col\">Actions</th></tr></thead> <tbody>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -120,7 +120,7 @@ func objectVersionRow(objID string, entry *VersionBrief) templ.Component {
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(utils.LinkVersionChanges(objID, entry.VNum.String()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 45, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 56, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -133,7 +133,7 @@ func objectVersionRow(objID string, entry *VersionBrief) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(entry.VNum.String())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 46, Col: 25}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 57, Col: 25}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -146,7 +146,7 @@ func objectVersionRow(objID string, entry *VersionBrief) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(utils.FormatDate(entry.Created))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 46, Col: 61}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 57, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -159,7 +159,7 @@ func objectVersionRow(objID string, entry *VersionBrief) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(entry.UserName)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 50, Col: 19}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 61, Col: 19}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -172,7 +172,7 @@ func objectVersionRow(objID string, entry *VersionBrief) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(entry.UserAddr)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 50, Col: 39}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 61, Col: 39}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -185,7 +185,7 @@ func objectVersionRow(objID string, entry *VersionBrief) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(entry.Message)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 53, Col: 19}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 64, Col: 19}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -198,20 +198,20 @@ func objectVersionRow(objID string, entry *VersionBrief) templ.Component {
 		var templ_7745c5c3_Var10 templ.SafeURL
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinURLErrs(utils.LinkObjectFiles(objID, entry.VNum.String(), ".", true))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 56, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 67, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\">browse files</a> |  <a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\">browse files</a> | <a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var11 templ.SafeURL
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinURLErrs(utils.LinkVersionChanges(objID, entry.VNum.String()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 57, Col: 65}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_history.templ`, Line: 68, Col: 65}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {

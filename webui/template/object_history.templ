@@ -24,9 +24,20 @@ templ ObjectHistoryPage(page *ObjectHistory) {
 		<div class="object-history">
 			@ObjectHeader(page.ObjectID)
 			<div class="panel">
-				<div class="panel-top">Object History</div>
+				<div class="panel-top">
+					<h2>Object History</h2>
+				</div>
 				<div class="panel-body">
 					<table>
+						<caption class="visually-hidden">Object version history</caption>
+						<thead>
+							<tr>
+								<th scope="col">Version & Date</th>
+								<th scope="col">Author</th>
+								<th scope="col">Message</th>
+								<th scope="col">Actions</th>
+							</tr>
+						</thead>
 						<tbody>
 							for _, entry := range page.Versions {
 								@objectVersionRow(page.ObjectID, entry)
@@ -53,7 +64,7 @@ templ objectVersionRow(objID string, entry *VersionBrief) {
 			"{ entry.Message }"
 		</td>
 		<td>
-			<a href={ utils.LinkObjectFiles(objID, entry.VNum.String(), ".", true) }>browse files</a> | 
+			<a href={ utils.LinkObjectFiles(objID, entry.VNum.String(), ".", true) }>browse files</a> |
 			<a href={ utils.LinkVersionChanges(objID, entry.VNum.String()) }>version details</a>
 		</td>
 	</tr>

@@ -32,14 +32,14 @@ func ObjectHeader(objID string) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"object-header\"><div class=\"object-title\"><a class=\"object-id\" href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"object-header\"><div class=\"object-title\"><h1 class=\"object-id\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var2 templ.SafeURL
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinURLErrs(utils.LinkObjectFiles(objID, "head", ".", true))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_components.templ`, Line: 10, Col: 78}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_components.templ`, Line: 10, Col: 61}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -52,33 +52,33 @@ func ObjectHeader(objID string) templ.Component {
 		var templ_7745c5c3_Var3 string
 		templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(objID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_components.templ`, Line: 10, Col: 88}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_components.templ`, Line: 10, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</a></div><div class=\"object-actions\" x-data=\"{ open: false }\"><button @click=\"open = !open\" class=\"actions-toggle\" aria-label=\"Object actions\">⋮</button><div x-show=\"open\" @click.away=\"open = false\" class=\"actions-dropdown\" x-cloak><!-- Placeholder for future actions --><div class=\"dropdown-item\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</a></h1></div><div class=\"object-actions\" x-data=\"dropdown()\" @keydown.away=\"close()\"><button x-ref=\"toggle\" @click=\"toggle()\" @keydown.enter.prevent=\"toggle()\" @keydown.space.prevent=\"toggle()\" class=\"actions-toggle\" aria-label=\"Object actions\" :aria-expanded=\"open.toString()\" aria-haspopup=\"true\">⋮</button><div x-ref=\"menu\" x-show=\"open\" @click.away=\"close()\" @keydown=\"handleKeydown($event)\" class=\"actions-dropdown\" x-cloak role=\"menu\"><div class=\"dropdown-item\" role=\"menuitem\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var4 templ.SafeURL
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinURLErrs(utils.LinkObjectFiles(objID, "head", ".", true))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_components.templ`, Line: 26, Col: 62}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_components.templ`, Line: 34, Col: 62}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\">Jump to Latest Version</a></div><div class=\"dropdown-item\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\">Jump to Latest Version</a></div><div class=\"dropdown-item\" role=\"menuitem\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 templ.SafeURL
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinURLErrs(utils.LinkObjectHistory(objID))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_components.templ`, Line: 31, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `webui/template/object_components.templ`, Line: 39, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {

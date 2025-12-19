@@ -25,28 +25,39 @@ templ VersionChangesPage(page *VersionChanges) {
 			@ObjectHeader(page.ObjectID)
 			<div class="panel">
 				<div class="panel-top">
-					<span class="panel-title">{ page.Version.VNum.String()} Details</span>
+					<h2 class="panel-title">{ page.Version.VNum.String() } Details</h2>
 					<div class="panel-controls">
 						if page.PrevVNum.IsZero() {
-							<span class="nav-link disabled">
+							<span class="nav-link disabled" aria-hidden="true">
 								@icon("chevron-left")
+								<span class="visually-hidden">Previous version (unavailable)</span>
 							</span>
 						} else {
-							<a class="nav-link" href={ utils.LinkVersionChanges(page.ObjectID, page.PrevVNum.String()) }>
+							<a class="nav-link"
+							   href={ utils.LinkVersionChanges(page.ObjectID, page.PrevVNum.String()) }
+							   aria-label="Go to previous version">
 								@icon("chevron-left")
+								<span class="visually-hidden">Previous version</span>
 							</a>
 						}
 						if page.NextVNum.IsZero() {
-							<span class="nav-link disabled">
+							<span class="nav-link disabled" aria-hidden="true">
 								@icon("chevron-right")
+								<span class="visually-hidden">Next version (unavailable)</span>
 							</span>
 						} else {
-							<a class="nav-link" href={ utils.LinkVersionChanges(page.ObjectID, page.NextVNum.String()) }>
+							<a class="nav-link"
+							   href={ utils.LinkVersionChanges(page.ObjectID, page.NextVNum.String()) }
+							   aria-label="Go to next version">
 								@icon("chevron-right")
+								<span class="visually-hidden">Next version</span>
 							</a>
 						}
-						<a class="nav-link" href={ utils.LinkObjectHistory(page.ObjectID) }>
+						<a class="nav-link"
+						   href={ utils.LinkObjectHistory(page.ObjectID) }
+						   aria-label="View all versions">
 							@icon("list")
+							<span class="visually-hidden">View all versions</span>
 						</a>
 					</div>
 				</div>
@@ -83,7 +94,7 @@ templ VersionChangesPage(page *VersionChanges) {
 			</div>
 			<div class="panel">
 				<div class="panel-top">
-					<span class="panel-title">Changed Files</span>
+					<h2 class="panel-title">Changed Files</h2>
 					<div class="panel-controls">
 						<a class="nav-link" href={ utils.LinkObjectFiles(page.ObjectID, page.Version.VNum.String(), ".", true) }>
 							<span> Browse { page.Version.VNum.String() }</span>

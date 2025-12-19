@@ -6,28 +6,36 @@ import "github.com/srerickson/ocfl-services/webui/utils"
 templ ObjectHeader(objID string) {
 	<div class="object-header">
 		<div class="object-title">
-			// object id always links to object head root file view
-			<a class="object-id" href={ utils.LinkObjectFiles(objID, "head", ".", true) }>{ objID }</a>
+			<h1 class="object-id">
+				<a href={ utils.LinkObjectFiles(objID, "head", ".", true) }>{ objID }</a>
+			</h1>
 		</div>
-		<div class="object-actions" x-data="{ open: false }">
+		<div class="object-actions" x-data="dropdown()" @keydown.away="close()">
 			<button
-				@click="open = !open"
+				x-ref="toggle"
+				@click="toggle()"
+				@keydown.enter.prevent="toggle()"
+				@keydown.space.prevent="toggle()"
 				class="actions-toggle"
 				aria-label="Object actions"
+				:aria-expanded="open.toString()"
+				aria-haspopup="true"
 			>⋮</button>
 			<div
+				x-ref="menu"
 				x-show="open"
-				@click.away="open = false"
+				@click.away="close()"
+				@keydown="handleKeydown($event)"
 				class="actions-dropdown"
 				x-cloak
+				role="menu"
 			>
-				<!-- Placeholder for future actions -->
-				<div class="dropdown-item">
+				<div class="dropdown-item" role="menuitem">
 					<a href={ utils.LinkObjectFiles(objID, "head", ".", true) }>
 						Jump to Latest Version
 					</a>
 				</div>
-				<div class="dropdown-item">
+				<div class="dropdown-item" role="menuitem">
 					<a href={ utils.LinkObjectHistory(objID) }>View Object History</a>
 				</div>
 			</div>

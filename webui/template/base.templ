@@ -11,15 +11,21 @@ templ BaseLayout() {
 			@icons()
 		</head>
 		<body>
-			<div class="top-menu">
-				<div class="server-name">
-					<a href="/">OCFL webui</a>
+			<!-- Skip navigation link -->
+			<a href="#main-content" class="skip-link">Skip to main content</a>
+
+			<header role="banner">
+				<div class="top-menu">
+					<div class="server-name">
+						<a href="/">OCFL webui</a>
+					</div>
 				</div>
-			</div>
+			</header>
+
 			<!-- page content -->
-			<div class="main">
+			<main id="main-content" role="main" class="main">
 				{ children... }
-			</div>
+			</main>
 		</body>
 	</html>
 }

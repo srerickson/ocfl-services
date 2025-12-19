@@ -16,9 +16,22 @@ body {
   margin: 0;
 }
 
-a, a:visited, a:hover {
+a {
 	text-decoration: none;
 	color: var(--c-indigo-1);
+}
+
+a:visited {
+	color: var(--c-indigo-3);
+}
+
+a:hover {
+	text-decoration: underline;
+	color: var(--c-indigo-2);
+}
+
+a:active {
+	color: var(--c-indigo-3);
 }
 
 h2 {
@@ -64,4 +77,81 @@ button:active {
 /* Alpine.js x-cloak helper (hide elements until Alpine loads) */
 [x-cloak] {
 	display: none !important;
+}
+
+/* Visually hidden but accessible to screen readers */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Skip navigation link - appears on focus */
+.skip-link {
+	position: absolute;
+	top: -40px;
+	left: 0;
+	background-color: var(--c-indigo-2);
+	color: white;
+	padding: var(--s-2) var(--s0);
+	text-decoration: none;
+	border-radius: 0 0 var(--border-radius) 0;
+	font-weight: 500;
+	z-index: 100;
+}
+
+.skip-link:focus {
+	top: 0;
+	outline: 2px solid white;
+	outline-offset: 2px;
+}
+
+/* Remove default focus outline (using focus-visible instead) */
+a:focus,
+button:focus,
+input:focus,
+summary:focus {
+	outline: none;
+}
+
+/* Focus visible for all interactive elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible,
+[role="menuitem"]:focus-visible {
+	outline: 2px solid var(--c-indigo-2);
+	outline-offset: 2px;
+	border-radius: var(--border-radius);
+}
+
+/* Button specific focus with box-shadow */
+button:focus-visible {
+	outline: 2px solid white;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px var(--c-indigo-3);
+}
+
+/* Ensure disabled elements are not focusable */
+button:disabled,
+a[aria-disabled="true"] {
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
 }

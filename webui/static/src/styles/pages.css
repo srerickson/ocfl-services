@@ -45,6 +45,22 @@
 	font-weight: bold;
 }
 
+.object-header .object-id a {
+	color: var(--c-text-1);
+	text-decoration: none;
+}
+
+.object-header .object-id a:hover {
+	color: var(--c-indigo-2);
+}
+
+/* Ensure panel h2 headings display correctly */
+.panel-top h2 {
+	margin: 0;
+	font-size: var(--s0);
+	font-weight: 500;
+}
+
 .object-menu {
 	display: flex;
 	gap: var(--s1);
