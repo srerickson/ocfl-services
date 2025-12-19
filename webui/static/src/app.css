@@ -120,6 +120,127 @@ button:active {
   margin: 0 auto;
 }
 
+/* object header and navigation */
+.object-header {
+	display: flex;
+	justify-content: space-between;
+	margin: var(--s0) 0;
+}
+
+.object-header .object-title {
+	display: flex;
+	gap: var(--s-1);
+	align-items: flex-end;
+}
+
+.object-header .object-id {
+	margin: 0;
+	font-size: var(--s2);
+	font-weight: bold;
+}
+
+.object-header .version-badge {
+	color: var(--c-text-2);
+	border: var(--border-thin) solid var(--c-border);
+	border-radius: 3px;
+	padding: 3px;
+	font-size: var(--s-0);
+	font-weight: 200;
+}
+
+.object-menu {
+	display: flex;
+	gap: var(--s1);
+	align-items: center;
+}
+
+.object-nav {
+	display: flex;
+	gap: var(--s-2);
+	align-items: center;
+}
+
+.object-nav .nav-item {
+	padding: var(--s-3) var(--s-1);
+	border-radius: var(--border-radius);
+	font-size: var(--s0);
+	color: var(--c-indigo-1);
+}
+
+.object-nav .nav-item.active {
+	background-color: var(--c-indigo-2);
+	color: white;
+	font-weight: 500;
+}
+
+.object-nav .nav-item:not(.active):hover {
+	background-color: var(--c-gray-soft);
+}
+
+/* object actions dropdown */
+.object-actions {
+	position: relative;
+}
+
+.actions-toggle {
+	padding: var(--s-2);
+	font-size: var(--s1);
+	font-weight: 700;
+	cursor: pointer;
+	border-radius: 50%;
+	width: 36px;
+	height: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--c-bg);
+	border-color: var(--c-border);
+	color: var(--c-text-1);
+	line-height: 1;
+}
+
+.actions-toggle:hover {
+	background-color: var(--c-gray-soft);
+	border: none;
+}
+
+.actions-dropdown {
+	position: absolute;
+	right: 0;
+	top: calc(100% + var(--s-4));
+	min-width: 180px;
+	background-color: var(--c-bg-elv);
+	border: var(--border-thin) solid var(--c-border);
+	border-radius: var(--border-radius);
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	z-index: 10;
+}
+
+.dropdown-item {
+	padding: var(--s-2);
+	font-size: var(--s-1);
+	cursor: pointer;
+	border-bottom: var(--border-thin) solid var(--c-divider);
+}
+
+.dropdown-item:last-child {
+	border-bottom: none;
+}
+
+.dropdown-item:hover:not(.disabled) {
+	background-color: var(--c-gray-soft);
+}
+
+.dropdown-item.disabled {
+	color: var(--c-text-3);
+	cursor: not-allowed;
+}
+
+/* Alpine.js x-cloak helper (hide elements until Alpine loads) */
+[x-cloak] {
+	display: none !important;
+}
+
 
 .panel {
 	width: 100%;
@@ -130,17 +251,108 @@ button:active {
 
 .panel .panel-top {
 	display: flex;
+	justify-content: space-between;
+	align-items: center;
 	background-color: var(--c-bg-alt);
 	border-top-left-radius: var(--border-radius);
 	border-top-right-radius: var(--border-radius);
 	border-bottom: var(--border-thin) solid var(--c-border);
-	gap: var(--s-2);
 	margin-bottom: 0;
 	padding: var(--s-2);
 }
 
+.panel .panel-title {
+	font-weight: 500;
+}
+
+.panel .panel-controls {
+	display: flex;
+	gap: var(--s-1);
+	align-items: center;
+}
+
+.panel .nav-link {
+	display: flex;
+	align-items: center;
+	gap: var(--s-4);
+	padding: 3px;
+	border-radius: var(--border-radius);
+	font-size: var(--s-1);
+	color: var(--c-indigo-2);
+	text-decoration: none;
+	transition: background-color 0.15s ease;
+}
+
+.panel .nav-link:hover {
+	background-color: var(--c-gray-soft);
+}
+
+.panel .nav-link.disabled {
+	color: var(--c-text-3);
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.panel .nav-link svg {
+	flex-shrink: 0;
+}
+
 .panel .panel-body {
 	margin-top: 0;
+}
+
+/* version details panel */
+.version-info {
+	padding: var(--s-1);
+	display: flex;
+	flex-direction: column;
+	gap: var(--s0);
+}
+
+.version-info .info-item {
+	display: flex;
+	flex-direction: column;
+	gap: var(--s-4);
+}
+
+.version-info .info-label {
+	display: flex;
+	align-items: center;
+	gap: var(--s-4);
+	font-size: var(--s-2);
+	font-weight: 600;
+	color: var(--c-text-2);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.version-info .info-value {
+	font-size: var(--s0);
+	color: var(--c-text-1);
+	padding-left: calc(16px + var(--s-4));
+}
+
+.version-info .info-label svg {
+	flex-shrink: 0;
+	color: var(--c-text-3);
+}
+
+.version-info .user-email {
+	color: var(--c-text-2);
+	font-size: var(--s-1);
+}
+
+.version-info .user-email::before {
+	content: "<";
+}
+
+.version-info .user-email::after {
+	content: ">";
+}
+
+.version-info .commit-message {
+	font-style: italic;
+	color: var(--c-text-2);
 }
 
 .panel-body table {
@@ -250,7 +462,7 @@ button:active {
 
 .object-history td:first-child,
 .object-history th:first-child {
-	width: 8ch;
+	width: 18ch;
 }
 
 

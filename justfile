@@ -8,6 +8,11 @@ generate: install-tools
 
 # serve webui server http://localhost:8284
 serve: install-tools
+    export OCFL_ROOT=testdata/reg-extension-dir-root
+    air -c .air.toml
+
+serve-dreamlab:
+    export OCFL_ROOT=s3://dreamlab-public/ocfl
     air -c .air.toml
 
 build: test

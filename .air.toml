@@ -3,7 +3,7 @@
 [build]
 pre_cmd = ["npx just generate"]
 cmd = "go build -o ./tmp/ocfl-webui ./cmd/ocfl-webui"
-entrypoint = ["./tmp/ocfl-webui", "-root", "testdata/reg-extension-dir-root"]
+entrypoint = ["./tmp/ocfl-webui"]
 include_ext = ["go", "templ", "css", "js"]
 
 exclude_dir = ["webui/static/dst"]

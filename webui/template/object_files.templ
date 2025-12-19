@@ -1,13 +1,15 @@
 package template
 
 import (
+	"github.com/srerickson/ocfl-go"
 	"github.com/srerickson/ocfl-services/webui/utils"
 	"time"
 )
 
 type ObjectFiles struct {
 	ObjectID         string
-	VersionRef       string // version ref from request url
+	VersionRef       string // version ref from request url ("head" or "v2")
+	VNum             ocfl.VNum
 	CurrentPath      string
 	DigestAlgorithm  string
 	DirectoryEntries []*DirectoryEntry
@@ -24,11 +26,9 @@ type DirectoryEntry struct {
 	IsDir   bool
 }
 
-
-
 templ ObjectFilesPage(page *ObjectFiles) {
 	@BaseLayout() {
-		<h2 class="object-id">{ page.ObjectID }</h2>
+		@ObjectHeader(page.ObjectID)
 		<div class="files panel">
 			<div class="breadcrumb panel-top">
 				<div class="path">
@@ -42,7 +42,7 @@ templ ObjectFilesPage(page *ObjectFiles) {
 						</a>
 					}
 				</div>
-				<a href={ utils.LinkObjectHistory(page.ObjectID)} class="history">
+				<a href={ utils.LinkVersionChanges(page.ObjectID, page.VNum.String()) } class="history">
 					@icon("clock")
 					<div class="created">2025-04-2</div>
 				</a>
@@ -57,7 +57,6 @@ templ ObjectFilesPage(page *ObjectFiles) {
 				</table>
 			</div>
 		</div>
-
 		if page.ReadmeHref != "" {
 			@readmeMD(page.ReadmeHref)
 		}

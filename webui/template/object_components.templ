@@ -1,0 +1,36 @@
+package template
+
+import "github.com/srerickson/ocfl-services/webui/utils"
+
+// ObjectHeader displays the object ID and navigation menu
+templ ObjectHeader(objID string) {
+	<div class="object-header">
+		<div class="object-title">
+			// object id always links to object head root file view
+			<a class="object-id" href={ utils.LinkObjectFiles(objID, "head", ".", true) }>{ objID }</a>
+		</div>
+		<div class="object-actions" x-data="{ open: false }">
+			<button
+				@click="open = !open"
+				class="actions-toggle"
+				aria-label="Object actions"
+			>⋮</button>
+			<div
+				x-show="open"
+				@click.away="open = false"
+				class="actions-dropdown"
+				x-cloak
+			>
+				<!-- Placeholder for future actions -->
+				<div class="dropdown-item">
+					<a href={ utils.LinkObjectFiles(objID, "head", ".", true) }>
+						Jump to Latest Version
+					</a>
+				</div>
+				<div class="dropdown-item">
+					<a href={ utils.LinkObjectHistory(objID) }>View Object History</a>
+				</div>
+			</div>
+		</div>
+	</div>
+}

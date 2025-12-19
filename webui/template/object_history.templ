@@ -1,14 +1,14 @@
 package template
 
 import (
-    "time"
-    "github.com/srerickson/ocfl-go"
+	"github.com/srerickson/ocfl-go"
 	"github.com/srerickson/ocfl-services/webui/utils"
+	"time"
 )
 
 type ObjectHistory struct {
-    ObjectID string
-    Versions []*VersionBrief
+	ObjectID string
+	Versions []*VersionBrief
 }
 
 type VersionBrief struct {
@@ -20,43 +20,41 @@ type VersionBrief struct {
 }
 
 templ ObjectHistoryPage(page *ObjectHistory) {
-    @BaseLayout() {
-        <div class="object-history">
-            <h2> {page.ObjectID} </h2>
-            <div class="panel">
-                <div class="panel-top">Version History</div>
-                <div class="panel-body">
-                    <table>
-                        <tbody>
-                            for _, entry := range page.Versions {
-                                @objectVersionRow(page.ObjectID, entry)
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    }
+	@BaseLayout() {
+		<div class="object-history">
+			@ObjectHeader(page.ObjectID)
+			<div class="panel">
+				<div class="panel-top">Object History</div>
+				<div class="panel-body">
+					<table>
+						<tbody>
+							for _, entry := range page.Versions {
+								@objectVersionRow(page.ObjectID, entry)
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+	}
 }
 
-templ objectVersionRow(objID string, entry *VersionBrief){
-    <tr>
+templ objectVersionRow(objID string, entry *VersionBrief) {
+	<tr>
 		<td>
 			<a href={ utils.LinkVersionChanges(objID, entry.VNum.String()) }>
-				{ entry.VNum.String() }
+				{ entry.VNum.String() } { utils.FormatDate(entry.Created) }
 			</a>
 		</td>
-        <td>
-            { utils.FormatDate(entry.Created) }
-        </td>
 		<td>
-            { entry.Message }
+			{ entry.UserName } ({ entry.UserAddr })
 		</td>
 		<td>
-            { entry.UserAddr }
+			"{ entry.Message }"
 		</td>
 		<td>
-			{ entry.UserName }
+			<a href={ utils.LinkObjectFiles(objID, entry.VNum.String(), ".", true) }>browse files</a> | 
+			<a href={ utils.LinkVersionChanges(objID, entry.VNum.String()) }>version details</a>
 		</td>
 	</tr>
 }
