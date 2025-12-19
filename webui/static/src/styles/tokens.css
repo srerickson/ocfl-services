@@ -1,0 +1,49 @@
+/**
+ * Design Tokens
+ * CSS custom properties for colors, spacing, typography, and borders
+ */
+
+:root {
+	--ratio: 1.25;
+	--s-5: calc(var(--s-4) / var(--ratio));
+	--s-4: calc(var(--s-3) / var(--ratio));
+	--s-3: calc(var(--s-2) / var(--ratio));
+	--s-2: calc(var(--s-1) / var(--ratio));
+	--s-1: calc(var(--s0) / var(--ratio));
+	--s0: 1rem;
+	--s1: calc(var(--s0) * var(--ratio));
+	--s2: calc(var(--s1) * var(--ratio));
+	--s3: calc(var(--s2) * var(--ratio));
+	--s4: calc(var(--s3) * var(--ratio));
+	--s5: calc(var(--s4) * var(--ratio));
+
+	--c-indigo-1: #3451b2;
+	--c-indigo-2: #3a5ccc;
+	--c-indigo-3: #5672cd;
+	--c-green: #1a7f37;
+	--c-red: #c53030;
+	--c-yellow: #9a6700;
+	--c-dir: #54aeff;
+	--c-gray-soft: rgba(142, 150, 170, .14);
+	--c-bg: #ffffff;
+	--c-bg-alt: #f6f6f7;
+	--c-bg-elv: #ffffff;
+	--c-text-1: rgba(60, 60, 67);
+	--c-text-2: rgba(60, 60, 67, .78);
+	--c-text-3: rgba(60, 60, 67, .56);
+	--c-border: #c2c2c4;
+	--c-divider: #e2e2e3;
+
+	--border-thin: 1px;
+
+	--font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+	--code-line-height: var(--s0);
+	--code-font-size: var(--s-1);
+	--code-color: var(--c-brand-1);
+	--code-bg: var(--c-gray-soft);
+	--code-block-bg: var(--c-bg-alt);
+	--code-block-color: var(--c-text-1);
+	--header-height: var(--s2);
+	--border-radius: 6px;
+}

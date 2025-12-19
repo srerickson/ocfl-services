@@ -1,0 +1,67 @@
+/**
+ * Base Styles
+ * Global resets, base element styling, and utilities
+ */
+
+:root {
+	font-family: var(--font-family);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--c-text-1);
+  margin: 0;
+}
+
+a, a:visited, a:hover {
+	text-decoration: none;
+	color: var(--c-indigo-1);
+}
+
+h2 {
+	font-size: var(--s3);
+	margin: var(--s0) 0;
+}
+
+input, button {
+	font-size: var(--s0);
+	font-family: var(--font-family);
+	padding: var(--s-2);
+	border: var(--border-thin) solid var(--c-border);
+	border-radius: var(--border-radius);
+	background-color: var(--c-bg);
+	color: var(--c-text-1);
+	line-height: var(--s0);
+}
+
+input:focus {
+	outline: 1px solid var(--c-indigo-2);
+	outline-offset: 0;
+	border-color: var(--c-indigo-2);
+}
+
+button {
+	background-color: var(--c-indigo-2);
+	color: white;
+	font-weight: 500;
+	cursor: pointer;
+	border-color: var(--c-indigo-2);
+}
+
+button:hover {
+	background-color: var(--c-indigo-1);
+	border-color: var(--c-indigo-1);
+}
+
+button:active {
+	background-color: var(--c-indigo-3);
+	border-color: var(--c-indigo-3);
+}
+
+/* Alpine.js x-cloak helper (hide elements until Alpine loads) */
+[x-cloak] {
+	display: none !important;
+}
