@@ -1,0 +1,45 @@
+package template
+
+import "github.com/srerickson/ocfl-services/webui/utils"
+
+// ObjectHeader displays the object ID and object-specific menu.
+// It's used by all object page templates.
+templ ObjectHeader(objID string) {
+	<div class="object-header">
+		<div class="object-title">
+			<h1 class="object-id">
+				<a href={ utils.LinkObjectFiles(objID, "head", ".", true) }>{ objID }</a>
+			</h1>
+		</div>
+		<div class="object-actions" x-data="dropdown()" @keydown.away="close()">
+			<button
+				x-ref="toggle"
+				@click="toggle()"
+				@keydown.enter.prevent="toggle()"
+				@keydown.space.prevent="toggle()"
+				class="actions-toggle"
+				aria-label="Object actions"
+				:aria-expanded="open.toString()"
+				aria-haspopup="true"
+			>⋮</button>
+			<div
+				x-ref="menu"
+				x-show="open"
+				@click.away="close()"
+				@keydown="handleKeydown($event)"
+				class="actions-dropdown"
+				x-cloak
+				role="menu"
+			>
+				<div class="dropdown-item" role="menuitem">
+					<a href={ utils.LinkObjectFiles(objID, "head", ".", true) }>
+						Latest Version (HEAD)
+					</a>
+				</div>
+				<div class="dropdown-item" role="menuitem">
+					<a href={ utils.LinkObjectHistory(objID) }>Object History</a>
+				</div>
+			</div>
+		</div>
+	</div>
+}

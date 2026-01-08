@@ -8,6 +8,8 @@ package template
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
+// Index layout is used by the index route (no object ID). It just displays
+// a form for looking an object using an ID.
 func Index() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -41,7 +43,7 @@ func Index() templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"object-lookup\"><h2>Find an object</h2><form id=\"searchForm\"><input type=\"text\" id=\"objectId\" name=\"objectId\" placeholder=\"Object ID\" class=\"\" required> <button type=\"submit\">→</button></form></div><script>\n\t\t\tdocument.getElementById('searchForm').addEventListener('submit', function(e) {\n\t\t\t\te.preventDefault();\n\t\t\t\tconst objectId = document.getElementById('objectId').value;\n\t\t\t\tconst encodedId = encodeURIComponent(objectId);\n\t\t\t\twindow.location.href = `/object/${encodedId}/head/`;\n\t\t\t});\n\t\t</script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"object-lookup\"><h1>Find an object</h1><form id=\"searchForm\" role=\"search\" aria-label=\"Object search\"><label for=\"objectId\" class=\"visually-hidden\">Object ID</label> <input type=\"text\" id=\"objectId\" name=\"objectId\" placeholder=\"Object ID\" class=\"\" required aria-required=\"true\" aria-describedby=\"objectId-desc\"> <span id=\"objectId-desc\" class=\"visually-hidden\">Enter the unique identifier for the OCFL object you want to find</span> <button type=\"submit\" aria-label=\"Search for object\">→</button></form></div><script>\n\t\t\tdocument.getElementById('searchForm').addEventListener('submit', function(e) {\n\t\t\t\te.preventDefault();\n\t\t\t\tconst objectId = document.getElementById('objectId').value;\n\t\t\t\tconst encodedId = encodeURIComponent(objectId);\n\t\t\t\twindow.location.href = `/object/${encodedId}/head/`;\n\t\t\t});\n\t\t</script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -204,6 +204,7 @@ func HandleGetObjectFiles(svc *access.Service) http.HandlerFunc {
 				ObjectID:         p.objID,
 				CurrentPath:      p.path,
 				VersionRef:       p.verRef,
+				VNum:             p.ver,
 				DigestAlgorithm:  obj.Alg(),
 				DirectoryEntries: make([]*template.DirectoryEntry, 0, len(entries)),
 				// Version: template.VersionBrief{
@@ -446,10 +447,7 @@ func HandleGetVersionChanges(svc *access.Service) http.HandlerFunc {
 		}
 
 		// Calculate version range for comparison
-		fromV := vn.Num() - 1
-		if fromV < 0 {
-			fromV = 0
-		}
+		fromV := max(vn.Num()-1, 0)
 		toV := vn.Num()
 
 		// Get file changes
@@ -473,6 +471,13 @@ func HandleGetVersionChanges(svc *access.Service) http.HandlerFunc {
 				UserAddr: versionInfo.UserAddr(),
 			},
 			FileTree: fileTree,
+		}
+
+		if vn.Num() < obj.Head().Num() {
+			page.NextVNum, _ = vn.Next()
+		}
+		if vn.Num() > 1 {
+			page.PrevVNum = ocfl.V(vn.Num()-1, vn.Padding())
 		}
 
 		template.VersionChangesPage(page).Render(ctx, w)

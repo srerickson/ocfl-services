@@ -1,0 +1,55 @@
+/**
+ * Layout Styles
+ * Site-wide header and main content container
+ */
+
+/* ========================================
+ * HEADER
+ * ======================================== */
+
+header[role="banner"] {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--surface-raised);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.top-menu {
+  display: flex;
+  align-items: center;
+  height: var(--header-height);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.server-name {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.02em;
+}
+
+.server-name a {
+  color: var(--content-primary);
+}
+
+.server-name a:hover {
+  color: var(--accent);
+}
+
+/* ========================================
+ * MAIN CONTENT
+ * ======================================== */
+
+.main {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: var(--space-4) var(--space-3);
+  }
+}

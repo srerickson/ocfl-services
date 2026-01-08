@@ -1,0 +1,323 @@
+/**
+ * Reusable Components
+ * Panels, tables, navigation, dropdown, prose, icons
+ */
+
+/* ========================================
+ * PANELS
+ * ======================================== */
+
+.panel {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+}
+
+.panel-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--surface-elevated);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.panel-title {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--content-muted);
+}
+
+.panel-body {
+  padding: var(--space-4);
+}
+
+.panel-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ========================================
+ * TABLES
+ * ======================================== */
+
+table.panel {
+  border-spacing: 0;
+}
+
+table.panel thead {
+  background-color: var(--surface-elevated);
+}
+
+table.panel th {
+  padding: var(--space-2) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--content-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+}
+
+table.panel th:last-child {
+  padding-right: var(--space-4);
+}
+
+table.panel td {
+  padding: var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0;
+}
+
+table.panel td:first-child {
+  padding-left: var(--space-4);
+}
+
+table.panel td:last-child {
+  padding-right: var(--space-4);
+}
+
+table.panel tbody tr:last-child td {
+  border-bottom: none;
+}
+
+table.panel tbody tr:hover {
+  background-color: var(--surface-elevated);
+}
+
+/* ========================================
+ * NAVIGATION LINKS
+ * ======================================== */
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--content-secondary);
+  border-radius: var(--border-radius);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.nav-link:hover {
+  background-color: var(--surface-base);
+  color: var(--content-primary);
+}
+
+.nav-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.nav-link.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.nav-link svg {
+  flex-shrink: 0;
+}
+
+/* ========================================
+ * DROPDOWN MENU
+ * ======================================== */
+
+.object-actions {
+  position: relative;
+}
+
+.actions-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  font-size: var(--text-lg);
+  color: var(--content-secondary);
+  background-color: transparent;
+  border-radius: var(--border-radius);
+  transition: background-color var(--transition-fast);
+}
+
+.actions-toggle:hover {
+  background-color: var(--surface-elevated);
+  color: var(--content-primary);
+}
+
+.actions-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.actions-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 50;
+  min-width: 180px;
+  margin-top: var(--space-1);
+  background-color: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.dropdown-item a {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--content-secondary);
+  transition: background-color var(--transition-fast);
+}
+
+.dropdown-item a:hover {
+  background-color: var(--surface-raised);
+  color: var(--content-primary);
+}
+
+.dropdown-item a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Alpine.js x-cloak */
+[x-cloak] {
+  display: none !important;
+}
+
+/* ========================================
+ * PROSE (Markdown content)
+ * ======================================== */
+
+.prose {
+  max-width: none;
+  color: var(--content-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  margin-top: var(--space-6);
+  margin-bottom: var(--space-3);
+  color: var(--content-primary);
+}
+
+.prose h1:first-child,
+.prose h2:first-child,
+.prose h3:first-child {
+  margin-top: 0;
+}
+
+.prose p {
+  margin-bottom: var(--space-4);
+}
+
+.prose ul,
+.prose ol {
+  margin-bottom: var(--space-4);
+}
+
+.prose code {
+  padding: 0.125em 0.375em;
+  font-size: var(--text-sm);
+  background-color: var(--surface-base);
+  border-radius: 3px;
+}
+
+.prose pre {
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  background-color: var(--surface-base);
+  border-radius: var(--border-radius);
+  overflow-x: auto;
+}
+
+.prose pre code {
+  padding: 0;
+  background: none;
+}
+
+.prose a {
+  color: var(--accent);
+}
+
+.prose a:hover {
+  text-decoration: underline;
+}
+
+.prose blockquote {
+  margin: var(--space-4) 0;
+  padding-left: var(--space-4);
+  border-left: 3px solid var(--border-default);
+  color: var(--content-muted);
+  font-style: italic;
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius);
+}
+
+.prose table {
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--border-radius);
+}
+
+.prose th,
+.prose td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.prose th {
+  font-weight: var(--weight-medium);
+  background-color: var(--surface-elevated);
+}
+
+.prose hr {
+  margin: var(--space-6) 0;
+  border: none;
+  border-top: 1px solid var(--border-default);
+}
+
+/* ========================================
+ * ICONS
+ * ======================================== */
+
+svg[aria-hidden="true"] {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.icon-dir {
+  color: var(--file-dir);
+}
+
+.icon-file-added {
+  color: var(--file-added);
+}
+
+.icon-file-modified {
+  color: var(--file-modified);
+}
+
+.icon-file-deleted {
+  color: var(--file-deleted);
+}

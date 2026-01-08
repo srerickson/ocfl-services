@@ -1,0 +1,90 @@
+:root {
+  /* ========================================
+   * COLORS
+   * ======================================== */
+
+  /* Surfaces - Dark theme palette */
+  --surface-base: #080f11;
+  --surface-raised: #141b1d;
+  --surface-elevated: #1c2225;
+
+  /* Content/Text - High contrast for accessibility */
+  --content-primary: #f0f0f0;
+  --content-secondary: #c5c5c5;
+  --content-muted: #909090;
+
+  /* Accent - Blue/Violet */
+  --accent: #8b9eff;
+  --accent-hover: #a8b4ff;
+  --accent-muted: #3d4a7a;
+
+  /* Borders */
+  --border-default: #2d3335;
+  --border-subtle: #232829;
+  --border-focus: var(--accent);
+
+  /* File icons */
+  --file-added: #48d597;
+  --file-modified: #f5b944;
+  --file-deleted: #fb6e88;
+  --file-dir: #8ba1ff;
+
+  /* ========================================
+   * TYPOGRAPHY
+   * ======================================== */
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+
+  /* Font sizes */
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.8125rem;   /* 13px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-lg: 1rem;        /* 16px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+
+  /* Line heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Font weights */
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* ========================================
+   * SPACING
+   * ======================================== */
+
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-12: 3rem;     /* 48px */
+
+  /* ========================================
+   * LAYOUT
+   * ======================================== */
+
+  --content-max-width: 800px;
+  --header-height: 3rem;
+  --border-radius: 4px;
+  --border-radius-lg: 6px;
+
+  /* ========================================
+   * EFFECTS
+   * ======================================== */
+
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+
+  /* Transitions */
+  --transition-fast: 100ms ease;
+  --transition-base: 150ms ease;
+}
