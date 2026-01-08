@@ -3,7 +3,10 @@
 ## Homepage
 
 WHEN an http client requests `/`
-THE SYSTEM SHALL respond with an HTML index page.
+THE SYSTEM SHALL responds with a form for looking-up objects by ID.
+
+WHEN a user enters an object id and clicks the form submit button on the homepage form,
+THE SYSTEM SHALL url-encode the ID and redirect the user to `/object/{object_id}/head/`
 
 ## Static Assets
 
@@ -132,7 +135,7 @@ THE SYSTEM SHALL respond with HTTP 404 Not Found.
 
 ## Object Actions Menu
 
-WHEN viewing any object page
+WHEN viewing any object page (`/object/...` or `/history/....`)
 THE SYSTEM SHALL display a dropdown menu with object actions.
 
 WHEN the object actions menu is displayed

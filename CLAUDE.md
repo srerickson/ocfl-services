@@ -1,16 +1,12 @@
 # Coding Practices
 
-- Functionality is defined in specs (`specs/`); specs are used to create tests;
-  tests are used to generate and improve implementations of the functionality.
+- Typical flow for new features:
+  1. Add new requirements to the appropriate spec file in `specs/`
+  2. Create tests for each new requirement
+  3. Write code to make the tests pass
+  4. Verify all tests pass before committing
 
-- Specs have format: `WHEN [condition/event] THE SYSTEM SHALL [expected behavior]`
-
-## Preferred Flow for New Features
-
-1. **Update the spec** - Add new requirements to the appropriate spec file in `specs/`
-2. **Write tests** - Create tests based on the new requirements
-3. **Implement** - Write the code to make the tests pass
-4. **Run tests** - Verify all tests pass before committing
+- Specs must have format: `WHEN [condition/event] THE SYSTEM SHALL [expected behavior]`
 
 - Comments should explain motivations and quirks of a block, not repeat what it
   says.
@@ -38,6 +34,6 @@ Service's `main` packages are are in `cmd/`.
 
 # Tools
 
-- templ for html template
+- templ for html templates
 - plain css (DO NOT use tailwindcss)
 - htmx and alpinejs for frontend js
