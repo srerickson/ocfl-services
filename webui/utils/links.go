@@ -8,7 +8,7 @@ import (
 	"github.com/a-h/templ"
 )
 
-func LinkObjectPath(objID string, version string, logicalPath string, isDir bool) templ.SafeURL {
+func LinkObjectFiles(objID string, version string, logicalPath string, isDir bool) templ.SafeURL {
 	if objID == "" {
 		return ""
 	}
@@ -23,4 +23,12 @@ func LinkObjectPath(objID string, version string, logicalPath string, isDir bool
 		}
 	}
 	return templ.URL(objectPath)
+}
+
+func LinkObjectHistory(objID string) templ.SafeURL {
+	return templ.URL("/history/" + url.PathEscape(objID))
+}
+
+func LinkVersionChanges(objID string, version string) templ.SafeURL {
+	return templ.URL("/history/" + url.PathEscape(objID) + "/" + version)
 }

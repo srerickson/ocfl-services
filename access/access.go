@@ -68,11 +68,31 @@ func (s *Service) SyncObject(ctx context.Context, objID string) (ObjectInfo, err
 // GetVersionInfo returns basic information about a version. If vn < 1, the
 // object's most recent version is used.
 func (s *Service) GetVersionInfo(ctx context.Context, objID string, vn int) (VersionInfo, error) {
-	_, err := s.checkObjectVersion(ctx, objID, vn)
+	_, err := s.syncObjectCheckVersion(ctx, objID, vn)
 	if err != nil {
 		return nil, err
 	}
 	return s.db.GetObjectVersion(ctx, s.rootID, objID, vn)
+}
+
+func (s *Service) ListVersions(ctx context.Context, objID string) ([]VersionInfo, error) {
+	if _, err := s.SyncObject(ctx, objID); err != nil {
+		return nil, err
+	}
+	return s.db.ListObjectVersions(ctx, s.rootID, objID)
+}
+
+// GetVersionChanges returns the list of file changes between two versions.
+func (s *Service) GetVersionChanges(ctx context.Context, objID string, fromV, toV int) ([]VersionFileChange, error) {
+	obj, err := s.SyncObject(ctx, objID)
+	if err != nil {
+		return nil, err
+	}
+	// Validate version numbers
+	if fromV < 0 || toV < 1 || toV > obj.Head().Num() {
+		return nil, fmt.Errorf("invalid version range: %w", ErrNotFound)
+	}
+	return s.db.GetObjectVersionChanges(ctx, s.rootID, objID, fromV, toV)
 }
 
 // IndexRoot indexes the all objects in the storage root. For duplicate calls,
@@ -106,7 +126,7 @@ func (s *Service) Logger() *slog.Logger { return s.logger }
 // OpenVersionFile return an fs.File for reading the contents of a file in an
 // object version. If vn is < 1, the object's most recent version is used.
 func (s *Service) OpenVersionFile(ctx context.Context, objID string, vn int, name string) (fs.File, error) {
-	obj, err := s.checkObjectVersion(ctx, objID, vn)
+	obj, err := s.syncObjectCheckVersion(ctx, objID, vn)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +148,7 @@ func (s *Service) OpenVersionFile(ctx context.Context, objID string, vn int, nam
 // ReadVersionDir returns a slice of directory entries for the contents of the
 // directory dir in the given object version's state.
 func (s *Service) ReadVersionDir(ctx context.Context, objID string, vn int, dir string) ([]VersionDirEntry, error) {
-	_, err := s.checkObjectVersion(ctx, objID, vn)
+	_, err := s.syncObjectCheckVersion(ctx, objID, vn)
 	if err != nil {
 		return nil, err
 	}
@@ -221,8 +241,9 @@ func (s *Service) syncObjectPath(ctx context.Context, objPath string, prev Objec
 	return s.db.GetObject(ctx, s.rootID, ocflObj.ID())
 }
 
-// checkObject
-func (s *Service) checkObjectVersion(ctx context.Context, objID string, vn int) (ObjectInfo, error) {
+// syncObject and also check its version number against vn: return ErrNotFound
+// if the existing object's Head is lower than vn.
+func (s *Service) syncObjectCheckVersion(ctx context.Context, objID string, vn int) (ObjectInfo, error) {
 	obj, err := s.SyncObject(ctx, objID)
 	if err != nil {
 		return nil, fmt.Errorf("with object_id=%q: %w", objID, err)

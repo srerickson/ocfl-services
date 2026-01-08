@@ -1,0 +1,163 @@
+package template
+
+import "github.com/srerickson/ocfl-services/webui/utils"
+import "github.com/srerickson/ocfl-go"
+
+type VersionChanges struct {
+	ObjectID string
+	Version  *VersionBrief
+	NextVNum ocfl.VNum
+	PrevVNum ocfl.VNum
+	FileTree *FileTreeNode
+}
+
+type FileTreeNode struct {
+	Name     string
+	Path     string
+	IsDir    bool
+	ModType  string
+	Children []*FileTreeNode
+}
+
+templ VersionChangesPage(page *VersionChanges) {
+	@BaseLayout() {
+		<div class="version-changes">
+			@ObjectHeader(page.ObjectID)
+			<div class="panel">
+				<div class="panel-top">
+					<h2 class="panel-title">{ page.Version.VNum.String() } Details</h2>
+					<div class="panel-controls">
+						if page.PrevVNum.IsZero() {
+							<span class="nav-link disabled" aria-hidden="true">
+								@icon("chevron-left")
+								<span class="visually-hidden">Previous version (unavailable)</span>
+							</span>
+						} else {
+							<a
+								class="nav-link"
+								href={ utils.LinkVersionChanges(page.ObjectID, page.PrevVNum.String()) }
+								aria-label="Go to previous version"
+							>
+								@icon("chevron-left")
+								<span class="visually-hidden">Previous version</span>
+							</a>
+						}
+						if page.NextVNum.IsZero() {
+							<span class="nav-link disabled" aria-hidden="true">
+								@icon("chevron-right")
+								<span class="visually-hidden">Next version (unavailable)</span>
+							</span>
+						} else {
+							<a
+								class="nav-link"
+								href={ utils.LinkVersionChanges(page.ObjectID, page.NextVNum.String()) }
+								aria-label="Go to next version"
+							>
+								@icon("chevron-right")
+								<span class="visually-hidden">Next version</span>
+							</a>
+						}
+						<a
+							class="nav-link"
+							href={ utils.LinkObjectHistory(page.ObjectID) }
+							aria-label="View all versions"
+						>
+							@icon("list")
+							<span class="visually-hidden">View all versions</span>
+						</a>
+					</div>
+				</div>
+				<div class="panel-body version-info">
+					<div class="info-item">
+						<div class="info-label">
+							@icon("clock")
+							<span>Created</span>
+						</div>
+						<div class="info-value">{ utils.FormatDate(page.Version.Created) }</div>
+					</div>
+					<div class="info-item">
+						<div class="info-label">
+							@icon("person")
+							<span>Author</span>
+						</div>
+						<div class="info-value">
+							{ page.Version.UserName }
+							if page.Version.UserAddr != "" {
+								<span class="user-email">{ page.Version.UserAddr }</span>
+							}
+						</div>
+					</div>
+					if page.Version.Message != "" {
+						<div class="info-item">
+							<div class="info-label">
+								@icon("comment")
+								<span>Message</span>
+							</div>
+							<div class="info-value commit-message">{ page.Version.Message }</div>
+						</div>
+					}
+				</div>
+			</div>
+			<div class="panel">
+				<div class="panel-top">
+					<h2 class="panel-title">Changed Files</h2>
+					<div class="panel-controls">
+						<a class="nav-link" href={ utils.LinkObjectFiles(page.ObjectID, page.Version.VNum.String(), ".", true) }>
+							<span>Browse { page.Version.VNum.String() }</span>
+							@icon("folder-open")
+						</a>
+					</div>
+				</div>
+				<div class="panel-body">
+					if len(page.FileTree.Children) == 0 {
+						<p>No file changes in this version</p>
+					} else {
+						<div class="history">
+							@renderFileTreeNode(page.FileTree, true)
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ renderFileTreeNode(node *FileTreeNode, isRoot bool) {
+	if !isRoot {
+		if node.IsDir {
+			<details open>
+				<summary class="node">
+					@icon("dir")
+					<span>{ node.Name }</span>
+				</summary>
+				<div class="children">
+					for _, child := range node.Children {
+						@renderFileTreeNode(child, false)
+					}
+				</div>
+			</details>
+		} else {
+			<div class="node">
+				@fileIcon(node.ModType)
+				<span>{ node.Name }</span>
+			</div>
+		}
+	} else {
+		for _, child := range node.Children {
+			@renderFileTreeNode(child, false)
+		}
+	}
+}
+
+templ fileIcon(modType string) {
+	switch modType {
+		case "added":
+			@icon("file-added")
+		case "modified":
+			@icon("file-modified")
+		case "deleted":
+			@icon("file-deleted")
+		default:
+			@icon("file")
+	}
+}

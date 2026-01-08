@@ -17,20 +17,31 @@ import (
 	"zombiezen.com/go/sqlite/sqlitex"
 )
 
-func testDB(t *testing.T) *sqlite.Conn {
+// newConn returns an a connection to an in-memory sqlite database for testing
+func newConn() (*sqlite.Conn, error) {
 	conn, err := sqlite.OpenConn(":memory:", sqlite.OpenReadWrite|sqlite.OpenCreate)
 	if err != nil {
-		t.Fatalf("Failed to open test database: %v", err)
+		return nil, err
 	}
 	if err := ocflite.Migrate(conn); err != nil {
+		return nil, err
+	}
+	return conn, err
+}
+
+// testConn returns sqlite connection for use in a test. The connection is
+// closed as part of the test's Cleanup().
+func testConn(t *testing.T) *sqlite.Conn {
+	conn, err := newConn()
+	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { conn.Close() })
 	return conn
 }
 
 func TestObject(t *testing.T) {
-	conn := testDB(t)
-	defer conn.Close()
+	conn := testConn(t)
 	rootName := "test"
 	numObjects := 10
 	objInputs := make([]*ocflite.Object, numObjects)
@@ -73,7 +84,7 @@ func TestObject(t *testing.T) {
 				DigestAlgorithm: objInput.DigestAlgorithm,
 				InventoryDigest: objInput.InventoryDigest,
 				Head:            len(objInput.Versions),
-				VPadding:        objInput.VPadding,
+				Vpadding:        objInput.Vpadding,
 				CreatedAt:       objInput.Versions[0].Created,
 				UpdatedAt:       objInput.Versions[2].Created,
 				IndexedAt:       got.IndexedAt, // ignored
@@ -104,7 +115,7 @@ func TestObject(t *testing.T) {
 				DigestAlgorithm: objInput.DigestAlgorithm,
 				InventoryDigest: objInput.InventoryDigest,
 				Head:            len(objInput.Versions),
-				VPadding:        objInput.VPadding,
+				Vpadding:        objInput.Vpadding,
 				CreatedAt:       objInput.Versions[0].Created,
 				UpdatedAt:       objInput.Versions[2].Created,
 				IndexedAt:       got.IndexedAt, // ignored
@@ -167,8 +178,7 @@ func TestObject(t *testing.T) {
 }
 
 func TestUnsetObject(t *testing.T) {
-	conn := testDB(t)
-	defer conn.Close()
+	conn := testConn(t)
 	rootName := "test"
 	// create two objects with the same content, delete one of them.
 	objID1, objID2 := "object-01", "object-02"
@@ -236,9 +246,59 @@ func TestUnsetObject(t *testing.T) {
 	})
 }
 
+func TestGetObjectVersion(t *testing.T) {
+	conn := testConn(t)
+	rootName := "test"
+	numObjects := 10
+	objInputs := make([]*ocflite.Object, numObjects)
+	for i := range numObjects {
+		id := fmt.Sprintf("object-%d", i)
+		objInputs[i] = createTestObjectWithContent(t, conn, rootName, id,
+			map[string]string{
+				"file-id": id,
+				"file1":   "content-1",
+			},
+			map[string]string{
+				"file1": "content-1",
+				"file2": "content-2",
+			},
+			map[string]string{
+				"new_file1":               "content-1",
+				"file2":                   "new content-2",
+				fmt.Sprintf("file-%d", i): "file",
+			},
+		)
+	}
+	version, err := ocflite.GetVersion(conn, rootName, "object-1", 3)
+	if err != nil {
+		t.Fatal("GetVersion:", err)
+	}
+	if version.Created.IsZero() {
+		t.Error("version created time is not set")
+	}
+	if version.Message == "" {
+		t.Error("version message is not set")
+	}
+	if version.UserAddr == "" {
+		t.Error("version user address is not set")
+	}
+	if version.UserName == "" {
+		t.Error("version user name is not set")
+	}
+	if version.StateDigest == "" {
+		t.Error("version state digest is not set")
+	}
+	if version.Vnum == 0 {
+		t.Error("version vnum is not set")
+	}
+	if version.Vpadding == 0 {
+		// test object has padding
+		t.Error("version padding is not set")
+	}
+}
+
 func TestObjectVersions(t *testing.T) {
-	conn := testDB(t)
-	defer conn.Close()
+	conn := testConn(t)
 	rootName := "root-01"
 	objID := "object-01"
 	runVersionTest := func(t *testing.T, states []ocflite.PathMap) {
@@ -255,7 +315,29 @@ func TestObjectVersions(t *testing.T) {
 				if l := len(versions); l != head {
 					t.Errorf("wrong number of versions, got=%d, exp=%d", l, head)
 				}
-				for j := range head {
+				for j, version := range versions {
+					if version.Created.IsZero() {
+						t.Error("version created time is not set")
+					}
+					if version.Message == "" {
+						t.Error("version message is not set")
+					}
+					if version.UserAddr == "" {
+						t.Error("version user address is not set")
+					}
+					if version.UserName == "" {
+						t.Error("version user name is not set")
+					}
+					if version.StateDigest == "" {
+						t.Error("version state digest is not set")
+					}
+					if version.Vnum == 0 {
+						t.Error("version vnum is not set")
+					}
+					if version.Vpadding == 0 {
+						// test object has padding
+						t.Error("version padding is not set")
+					}
 					prevState, err := ocflite.GetVersionState(conn, rootName, objID, j+1)
 					if err != nil {
 						t.Errorf("getting version %d state: %v", j+1, err)
@@ -320,8 +402,7 @@ func TestObjectVersions(t *testing.T) {
 func TestReadVersionDir(t *testing.T) {
 
 	t.Run("multiple objects same file", func(t *testing.T) {
-		conn := testDB(t)
-		defer conn.Close()
+		conn := testConn(t)
 		rootName := "root"
 		for i := range 9 {
 			objID := fmt.Sprintf("object-%d", i)
@@ -514,8 +595,7 @@ func TestReadVersionDir(t *testing.T) {
 	}
 	for tname, tt := range tests {
 		t.Run(tname, func(t *testing.T) {
-			conn := testDB(t)
-			defer conn.Close()
+			conn := testConn(t)
 			rootName := "root-01"
 			objID := "object-01"
 			createTestObject(t, conn, rootName, objID, tt.versions...)
@@ -562,8 +642,7 @@ func TestReadVersionDir(t *testing.T) {
 }
 
 func TestListObjects(t *testing.T) {
-	conn := testDB(t)
-	defer conn.Close()
+	conn := testConn(t)
 	rootName := "test-root"
 
 	// Create 100 objects
@@ -709,8 +788,7 @@ func TestStatVersionFile(t *testing.T) {
 	}
 	for tname, tt := range tests {
 		t.Run(tname, func(t *testing.T) {
-			conn := testDB(t)
-			defer conn.Close()
+			conn := testConn(t)
 			rootName := "root-01"
 			objID := "object-01"
 			createTestObject(t, conn, rootName, objID, tt.versions...)
@@ -742,8 +820,7 @@ func TestStatVersionFile(t *testing.T) {
 
 func TestTouchObject(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		conn := testDB(t)
-		defer conn.Close()
+		conn := testConn(t)
 		rootName := "test-root"
 		objID := "test-object"
 		createTestObject(t, conn, rootName, objID,
@@ -770,6 +847,429 @@ func TestTouchObject(t *testing.T) {
 				"want at least 3s", diff)
 		}
 	})
+}
+
+func TestGetVersionChanges(t *testing.T) {
+	conn := testConn(t)
+	rootName := "test"
+
+	t.Run("basic changes", func(t *testing.T) {
+		// v1: {a.txt: content1, b.txt: content2}
+		// v2: {a.txt: content1, b.txt: content3, c.txt: content4}
+		// Expected: b.txt modified, c.txt added
+		obj := createTestObjectWithContent(t, conn, rootName, "obj1",
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content3",
+				"c.txt": "content4",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes))
+		}
+
+		// Results should be sorted by path
+		if changes[0].Path != "b.txt" {
+			t.Errorf("got first change path=%q, want 'b.txt'", changes[0].Path)
+		}
+		if changes[0].ModType != ocflite.FileModified {
+			t.Errorf("got first change type=%v, want ChangeTypeModified", changes[0].ModType)
+		}
+
+		if changes[1].Path != "c.txt" {
+			t.Errorf("got second change path=%q, want 'c.txt'", changes[1].Path)
+		}
+		if changes[1].ModType != ocflite.FileAdded {
+			t.Errorf("got second change type=%v, want ChangeTypeAdded", changes[1].ModType)
+		}
+	})
+
+	t.Run("from version 0", func(t *testing.T) {
+		// v0 (no version) -> v2: all files in v2 should be added
+		obj := createTestObjectWithContent(t, conn, rootName, "obj2",
+			map[string]string{
+				"a.txt": "content1",
+			},
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 0, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes))
+		}
+
+		// All should be added
+		for i, change := range changes {
+			if change.ModType != ocflite.FileAdded {
+				t.Errorf("change %d: got type=%v, want ChangeTypeAdded", i, change.ModType)
+			}
+		}
+
+		// Check sorted
+		if changes[0].Path != "a.txt" || changes[1].Path != "b.txt" {
+			t.Errorf("changes not sorted correctly: got [%q, %q]", changes[0].Path, changes[1].Path)
+		}
+	})
+
+	t.Run("all files added", func(t *testing.T) {
+		// v1: empty, v2: has files
+		obj := createTestObjectWithContent(t, conn, rootName, "obj3",
+			map[string]string{},
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes))
+		}
+
+		for i, change := range changes {
+			if change.ModType != ocflite.FileAdded {
+				t.Errorf("change %d: got type=%v, want ChangeTypeAdded", i, change.ModType)
+			}
+		}
+	})
+
+	t.Run("all files deleted", func(t *testing.T) {
+		// v1: has files, v2: empty
+		obj := createTestObjectWithContent(t, conn, rootName, "obj4",
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+			map[string]string{},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2", len(changes))
+		}
+
+		for i, change := range changes {
+			if change.ModType != ocflite.FileDeleted {
+				t.Errorf("change %d: got type=%v, want ChangeTypeDeleted", i, change.ModType)
+			}
+		}
+	})
+
+	t.Run("same version", func(t *testing.T) {
+		// v2 -> v2: should have no changes
+		obj := createTestObjectWithContent(t, conn, rootName, "obj5",
+			map[string]string{
+				"a.txt": "content1",
+			},
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 2, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes) != 0 {
+			t.Errorf("got %d changes, want 0", len(changes))
+		}
+	})
+
+	t.Run("reverse comparison", func(t *testing.T) {
+		// v2 -> v1: added and deleted should be swapped
+		obj := createTestObjectWithContent(t, conn, rootName, "obj6",
+			map[string]string{
+				"a.txt": "content1",
+			},
+			map[string]string{
+				"b.txt": "content2",
+			},
+		)
+
+		// Forward: v1 -> v2
+		forward, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Reverse: v2 -> v1
+		reverse, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 2, 1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(forward) != 2 || len(reverse) != 2 {
+			t.Fatalf("got %d forward and %d reverse changes, want 2, 2", len(forward), len(reverse))
+		}
+
+		// In forward: a.txt deleted, b.txt added
+		// In reverse: a.txt added, b.txt deleted
+		for _, change := range forward {
+			if change.Path == "a.txt" && change.ModType != ocflite.FileDeleted {
+				t.Errorf("forward: a.txt should be deleted")
+			}
+			if change.Path == "b.txt" && change.ModType != ocflite.FileAdded {
+				t.Errorf("forward: b.txt should be added")
+			}
+		}
+
+		for _, change := range reverse {
+			if change.Path == "a.txt" && change.ModType != ocflite.FileAdded {
+				t.Errorf("reverse: a.txt should be added")
+			}
+			if change.Path == "b.txt" && change.ModType != ocflite.FileDeleted {
+				t.Errorf("reverse: b.txt should be deleted")
+			}
+		}
+	})
+
+	t.Run("skip intermediate versions", func(t *testing.T) {
+		// v1: {a: d1, b: d2}
+		// v2: {a: d1, c: d3}  // b deleted, c added
+		// v3: {a: d4, c: d3}  // a modified
+		// Compare v1 -> v3: a modified, b deleted, c added
+		obj := createTestObjectWithContent(t, conn, rootName, "obj7",
+			map[string]string{
+				"a.txt": "content1",
+				"b.txt": "content2",
+			},
+			map[string]string{
+				"a.txt": "content1",
+				"c.txt": "content3",
+			},
+			map[string]string{
+				"a.txt": "content4",
+				"c.txt": "content3",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 3)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes) != 3 {
+			t.Fatalf("got %d changes, want 3", len(changes))
+		}
+
+		// Verify each change
+		changeMap := make(map[string]ocflite.ModType)
+		for _, change := range changes {
+			changeMap[change.Path] = change.ModType
+		}
+
+		if changeMap["a.txt"] != ocflite.FileModified {
+			t.Errorf("a.txt should be modified")
+		}
+		if changeMap["b.txt"] != ocflite.FileDeleted {
+			t.Errorf("b.txt should be deleted")
+		}
+		if changeMap["c.txt"] != ocflite.FileAdded {
+			t.Errorf("c.txt should be added")
+		}
+	})
+
+	t.Run("invalid from version", func(t *testing.T) {
+		obj := createTestObjectWithContent(t, conn, rootName, "obj8",
+			map[string]string{
+				"a.txt": "content1",
+			},
+		)
+
+		_, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, -1, 1)
+		if err == nil {
+			t.Error("expected error for negative fromVN")
+		}
+	})
+
+	t.Run("invalid to version", func(t *testing.T) {
+		obj := createTestObjectWithContent(t, conn, rootName, "obj9",
+			map[string]string{
+				"a.txt": "content1",
+			},
+		)
+
+		_, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 0)
+		if err == nil {
+			t.Error("expected error for toVN < 1")
+		}
+
+		_, err = ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 999)
+		if err == nil {
+			t.Error("expected error for non-existent toVN")
+		}
+	})
+
+	t.Run("file rename appears as delete and add", func(t *testing.T) {
+		// v1: {old/path.txt: digest1}
+		// v2: {new/path.txt: digest1}  // same digest, different path
+		content := "same content"
+		obj := createTestObjectWithContent(t, conn, rootName, "obj10",
+			map[string]string{
+				"old/path.txt": content,
+			},
+			map[string]string{
+				"new/path.txt": content,
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(changes) != 2 {
+			t.Fatalf("got %d changes, want 2 (rename appears as delete+add)", len(changes))
+		}
+
+		changeMap := make(map[string]ocflite.ModType)
+		for _, change := range changes {
+			changeMap[change.Path] = change.ModType
+		}
+
+		if changeMap["new/path.txt"] != ocflite.FileAdded {
+			t.Errorf("new/path.txt should be added")
+		}
+		if changeMap["old/path.txt"] != ocflite.FileDeleted {
+			t.Errorf("old/path.txt should be deleted")
+		}
+	})
+
+	t.Run("results are sorted", func(t *testing.T) {
+		// Create object with multiple changes in non-alphabetical order
+		obj := createTestObjectWithContent(t, conn, rootName, "obj11",
+			map[string]string{
+				"a.txt": "content1",
+			},
+			map[string]string{
+				"z.txt": "content-z",
+				"b.txt": "content-b",
+				"m.txt": "content-m",
+			},
+		)
+
+		changes, err := ocflite.GetVersionChanges(conn, rootName, obj.ID, 1, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Verify sorted order
+		for i := 1; i < len(changes); i++ {
+			if changes[i-1].Path >= changes[i].Path {
+				t.Errorf("changes not sorted: %q >= %q at positions %d, %d",
+					changes[i-1].Path, changes[i].Path, i-1, i)
+			}
+		}
+	})
+}
+
+func BenchmarkGetObject(b *testing.B) {
+	scenarios := []struct {
+		name     string
+		numObjs  int
+		numVers  int
+		numFiles int
+	}{
+		{name: "10obj-10v-10f", numObjs: 10, numVers: 10, numFiles: 10},
+		{name: "100obj-10v-10f", numObjs: 100, numVers: 10, numFiles: 10},
+		{name: "1000obj-10v-10f", numObjs: 1000, numVers: 10, numFiles: 10},
+	}
+	for _, sc := range scenarios {
+		b.Run(sc.name, func(b *testing.B) {
+			conn, err := newConn()
+			if err != nil {
+				b.Fatal("db connection:", err)
+			}
+			defer conn.Close()
+			rootName := "bench-root"
+			ids, err := createBenchmarkObjects(conn, rootName, sc.numObjs, sc.numVers, sc.numFiles)
+			if err != nil {
+				b.Fatal("creating benchmark object:", err)
+			}
+			// Query the first object (representative of query performance)
+			objID := ids[0]
+			// Benchmark loop using new b.Loop() from Go 1.24
+			for b.Loop() {
+				_, err := ocflite.GetObjectBrief(conn, rootName, objID)
+				if err != nil {
+					b.Fatal("GetObjectBrief:", err)
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkListVersionFiles(b *testing.B) {
+	scenarios := []struct {
+		name     string
+		numObjs  int
+		numVers  int
+		numFiles int
+		queryDir string
+	}{
+		{name: "10obj-10v-10f", numObjs: 10, numVers: 10, numFiles: 10, queryDir: "."},
+		{name: "100obj-10v-10f", numObjs: 100, numVers: 10, numFiles: 10, queryDir: "."},
+		{name: "1000obj-10v-10f", numObjs: 1000, numVers: 10, numFiles: 10, queryDir: "."},
+	}
+	for _, sc := range scenarios {
+		b.Run(sc.name, func(b *testing.B) {
+			conn, err := newConn()
+			if err != nil {
+				b.Fatal("db connection:", err)
+			}
+			defer conn.Close()
+			rootName := "bench-root"
+			ids, err := createBenchmarkObjects(conn, rootName, sc.numObjs, sc.numVers, sc.numFiles)
+			if err != nil {
+				b.Fatal("creating benchmark object:", err)
+			}
+			// Query the first object (representative of query performance)
+			objID := ids[0]
+			vn := sc.numVers
+			// Benchmark loop using new b.Loop() from Go 1.24
+			for b.Loop() {
+				fileCount := 0
+				for _, err := range ocflite.ListVersionFiles(conn, rootName, objID, vn, sc.queryDir) {
+					if err != nil {
+						b.Fatal("ListVersionFiles error:", err)
+					}
+					// Access file to prevent compiler optimizations
+					fileCount++
+				}
+				// Verify we got results
+				if fileCount == 0 {
+					b.Fatal("no files returned from ListVersionFiles")
+				}
+			}
+		})
+	}
 }
 
 // dirEntriesEqual compares two slices of PathInfo and reports any differences
@@ -820,7 +1320,7 @@ func newTestObject(id string, states ...ocflite.PathMap) *ocflite.Object {
 		StoragePath:     "storage-path-" + id,
 		InventoryDigest: "inventory-digest-" + id,
 		DigestAlgorithm: "sha256",
-		VPadding:        3,
+		Vpadding:        3,
 		Manifest:        manifest,
 		Versions:        versions,
 	}
@@ -932,96 +1432,32 @@ func countTable(t *testing.T, conn *sqlite.Conn, table string) int {
 	return count
 }
 
-// BenchmarkListVersionFiles benchmarks the ListVersionFiles function with
-// various object sizes, version counts, and number of objects in the
-// repository.
-func BenchmarkListVersionFiles(b *testing.B) {
-	// Test scenarios: {numObjects, numVersions, numVersionFiles}
-	scenarios := []struct {
-		name            string
-		numObjects      int
-		numVersions     int
-		numVersionFiles int
-		queryDir        string
-	}{
-		{name: "10obj-10v-10f", numObjects: 10, numVersions: 10, numVersionFiles: 10, queryDir: "."},
-		{name: "100obj-10v-10f", numObjects: 100, numVersions: 10, numVersionFiles: 10, queryDir: "."},
-		{name: "1000obj-10v-10f", numObjects: 1000, numVersions: 10, numVersionFiles: 10, queryDir: "."},
-		// {name: "10obj-100v-10f", numObjects: 10, numVersions: 100, numVersionFiles: 10, queryDir: "."},
-		// {name: "100obj-100v-10f", numObjects: 100, numVersions: 100, numVersionFiles: 10, queryDir: "."},
-		// {name: "1000obj-100v-10f", numObjects: 1000, numVersions: 100, numVersionFiles: 10, queryDir: "."},
-		// {name: "10obj-10v-100f", numObjects: 10, numVersions: 10, numVersionFiles: 100, queryDir: "."},
-		// {name: "100obj-10v-100f", numObjects: 100, numVersions: 10, numVersionFiles: 100, queryDir: "."},
-		// {name: "1000obj-10v-100f", numObjects: 1000, numVersions: 10, numVersionFiles: 100, queryDir: "."},
-		// {name: "10obj-100v-100f", numObjects: 10, numVersions: 100, numVersionFiles: 100, queryDir: "."},
-		// {name: "100obj-100v-100f", numObjects: 100, numVersions: 100, numVersionFiles: 100, queryDir: "."},
-		// {name: "1000obj-100v-100f", numObjects: 1000, numVersions: 100, numVersionFiles: 100, queryDir: "."},
+func createBenchmarkObjects(conn *sqlite.Conn, rootName string, numObjects int, numVersions int, numFiles int) ([]string, error) {
+	// Create multiple objects in the repository
+	ids := make([]string, numObjects)
+	for obj := range numObjects {
+		objID := fmt.Sprintf("bench-object-%d", obj)
+		ids[obj] = objID
+		// Create object with multiple versions containing files
+		versions := make([]map[string]string, numVersions)
+		for v := range numVersions {
+			content := make(map[string]string, numFiles)
+			for f := range numFiles {
+				// Create varied paths including nested
+				// directories
+				filePath := fmt.Sprintf(
+					"data/subdir/file-%d-%d.txt", v, f)
+				fileContent := fmt.Sprintf(
+					"content-obj%d-v%d-f%d", obj, v, f)
+				content[filePath] = fileContent
+			}
+			versions[v] = content
+		}
+
+		_, err := createObjectWithContent(conn, rootName, objID, versions...)
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	for _, sc := range scenarios {
-		b.Run(sc.name, func(b *testing.B) {
-			// Setup: Create database and objects (runs once)
-			conn, err := sqlite.OpenConn(":memory:",
-				sqlite.OpenReadWrite|sqlite.OpenCreate)
-			if err != nil {
-				b.Fatalf("Failed to open test database: %v", err)
-			}
-			defer conn.Close()
-			if err := ocflite.Migrate(conn); err != nil {
-				b.Fatal(err)
-			}
-
-			rootName := "bench-root"
-
-			// Create multiple objects in the repository
-			for obj := range sc.numObjects {
-				objID := fmt.Sprintf("bench-object-%d", obj)
-
-				// Create object with multiple versions containing files
-				versions := make([]map[string]string, sc.numVersions)
-				for v := range sc.numVersions {
-					content := make(map[string]string,
-						sc.numVersionFiles)
-					for f := range sc.numVersionFiles {
-						// Create varied paths including nested
-						// directories
-						filePath := fmt.Sprintf(
-							"data/subdir/file-%d-%d.txt", v, f)
-						fileContent := fmt.Sprintf(
-							"content-obj%d-v%d-f%d", obj, v, f)
-						content[filePath] = fileContent
-					}
-					versions[v] = content
-				}
-
-				_, err = createObjectWithContent(conn, rootName, objID,
-					versions...)
-				if err != nil {
-					b.Fatal("creating benchmark object:", err)
-				}
-			}
-
-			// Query the first object (representative of query performance)
-			objID := "bench-object-0"
-			vn := sc.numVersions
-
-			// Benchmark loop using new b.Loop() from Go 1.24
-			for b.Loop() {
-				fileCount := 0
-				for file, err := range ocflite.ListVersionFiles(conn,
-					rootName, objID, vn, sc.queryDir) {
-					if err != nil {
-						b.Fatal("ListVersionFiles error:", err)
-					}
-					// Access file to prevent compiler optimizations
-					_ = file.Path
-					fileCount++
-				}
-				// Verify we got results
-				if fileCount == 0 {
-					b.Fatal("no files returned from ListVersionFiles")
-				}
-			}
-		})
-	}
+	return ids, nil
 }

@@ -1,0 +1,64 @@
+package template
+
+import (
+	"github.com/srerickson/ocfl-go"
+	"github.com/srerickson/ocfl-services/webui/utils"
+	"time"
+)
+
+type ObjectHistory struct {
+	ObjectID string
+	Versions []*VersionBrief
+}
+
+type VersionBrief struct {
+	VNum     ocfl.VNum
+	Message  string
+	UserName string
+	UserAddr string
+	Created  time.Time
+}
+
+templ ObjectHistoryPage(page *ObjectHistory) {
+	@BaseLayout() {
+		<div class="object-history">
+			@ObjectHeader(page.ObjectID)
+			<table class="panel">
+				<caption class="visually-hidden">Object version history</caption>
+				<thead>
+					<tr>
+						<th scope="col">Version & Date</th>
+						<th scope="col">Author</th>
+						<th scope="col">Message</th>
+						<th scope="col">Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, entry := range page.Versions {
+						@objectVersionRow(page.ObjectID, entry)
+					}
+				</tbody>
+			</table>
+		</div>
+	}
+}
+
+templ objectVersionRow(objID string, entry *VersionBrief) {
+	<tr>
+		<td>
+			<a href={ utils.LinkVersionChanges(objID, entry.VNum.String()) } class="version-link">
+				<span class="version-num">{ entry.VNum.String() }</span>
+				<span class="version-date">{ utils.FormatDate(entry.Created) }</span>
+			</a>
+		</td>
+		<td>
+			{ entry.UserName }
+		</td>
+		<td>
+			"{ entry.Message }"
+		</td>
+		<td>
+			<a href={ utils.LinkObjectFiles(objID, entry.VNum.String(), ".", true) }>Browse Files</a> 
+		</td>
+	</tr>
+}

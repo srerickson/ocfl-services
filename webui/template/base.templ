@@ -1,25 +1,29 @@
 package template
 
+// BaseLayout template wraps all other templates.
 templ BaseLayout() {
 	<!DOCTYPE html>
-	<html lang="en" class="h-full">
+	<html lang="en" class="h-full" data-theme="dark">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>OCFL WebUI</title>
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script defer src="/static/app.js"></script>
 			@icons()
 		</head>
 		<body>
-			<div class="top-menu">
-				<div class="server-name">
-					<a href="/">OCFL webui</a>
+			<header role="banner">
+				<div class="top-menu">
+					<div class="server-name">
+						<a href="/">OCFL webui</a>
+					</div>
 				</div>
-			</div>
+			</header>
 			<!-- page content -->
-			<div class="main">
+			<main role="main" class="main">
 				{ children... }
-			</div>
+			</main>
 		</body>
 	</html>
 }

@@ -40,17 +40,20 @@ func New(accessService *access.Service) http.Handler {
 	// homepage
 	mux.HandleFunc("GET /{$}", HandleIndex())
 
-	// object view
-	mux.HandleFunc("GET /object/{id}/{version}/{path...}", HandleGetObjectPath(accessService))
-	mux.HandleFunc("GET /object/{id}/{version}", redirectToDefaultObjectPath)
-	mux.HandleFunc("GET /object/{id}/", redirectToDefaultObjectPath)
-	mux.HandleFunc("GET /object/{id}", redirectToDefaultObjectPath)
+	// object files view
+	mux.HandleFunc("GET /object/{id}/{version}/{path...}", HandleGetObjectFiles(accessService))
+	mux.HandleFunc("GET /object/{id}/{version}", redirectToDefaultObjectFiles)
+	mux.HandleFunc("GET /object/{id}/", redirectToDefaultObjectFiles)
+	mux.HandleFunc("GET /object/{id}", redirectToDefaultObjectFiles)
+
+	mux.HandleFunc("GET /history/{id}", HandleGetObjectHistory(accessService))
+	mux.HandleFunc("GET /history/{id}/{version}", HandleGetVersionChanges(accessService))
 
 	// wrap with logging middleware
 	return loggingMiddleware(accessService.Logger())(mux)
 }
 
-func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
+func HandleGetObjectFiles(svc *access.Service) http.HandlerFunc {
 
 	// request parameters
 	type params struct {
@@ -188,11 +191,6 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 			if p.ver.Num() < 1 {
 				p.ver = obj.Head()
 			}
-			ver, err := svc.GetVersionInfo(ctx, p.objID, p.ver.Num())
-			if err != nil {
-				logErr(w, r, p, err)
-				return
-			}
 			entries, err := svc.ReadVersionDir(ctx, p.objID, p.ver.Num(), p.path)
 			if err != nil {
 				logErr(w, r, p, err)
@@ -206,15 +204,16 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 				ObjectID:         p.objID,
 				CurrentPath:      p.path,
 				VersionRef:       p.verRef,
+				VNum:             p.ver,
 				DigestAlgorithm:  obj.Alg(),
 				DirectoryEntries: make([]*template.DirectoryEntry, 0, len(entries)),
-				Version: template.VersionBrief{
-					VNum:     p.ver,
-					Created:  ver.Created(),
-					Message:  ver.Message(),
-					UserName: ver.UserName(),
-					UserAddr: ver.UserAddr(),
-				},
+				// Version: template.VersionBrief{
+				// 	VNum:     p.ver,
+				// 	Created:  ver.Created(),
+				// 	Message:  ver.Message(),
+				// 	UserName: ver.UserName(),
+				// 	UserAddr: ver.UserAddr(),
+				// },
 			}
 			if page.CurrentPath != "." {
 				parentDirEntry := &template.DirectoryEntry{
@@ -266,6 +265,225 @@ func HandleGetObjectPath(svc *access.Service) http.HandlerFunc {
 	}
 }
 
+// buildFileTree converts a flat list of file changes into a hierarchical tree structure
+func buildFileTree(changes []access.VersionFileChange) *template.FileTreeNode {
+	root := &template.FileTreeNode{
+		Name:     "/",
+		Path:     "",
+		IsDir:    true,
+		Children: make([]*template.FileTreeNode, 0),
+	}
+
+	for _, change := range changes {
+		filePath := change.Path()
+		modType := change.Type()
+
+		// Split path into segments
+		segments := strings.Split(strings.Trim(filePath, "/"), "/")
+		if len(segments) == 0 || segments[0] == "" {
+			continue
+		}
+
+		// Navigate/create directory nodes
+		current := root
+		for i, segment := range segments {
+			isLastSegment := i == len(segments)-1
+
+			if isLastSegment {
+				// This is the file - add it as a leaf node
+				fileNode := &template.FileTreeNode{
+					Name:    segment,
+					Path:    filePath,
+					IsDir:   false,
+					ModType: modType,
+				}
+				current.Children = append(current.Children, fileNode)
+			} else {
+				// This is a directory - find or create it
+				var dirNode *template.FileTreeNode
+				for _, child := range current.Children {
+					if child.IsDir && child.Name == segment {
+						dirNode = child
+						break
+					}
+				}
+
+				if dirNode == nil {
+					// Create new directory node
+					dirPath := strings.Join(segments[:i+1], "/")
+					dirNode = &template.FileTreeNode{
+						Name:     segment,
+						Path:     dirPath,
+						IsDir:    true,
+						Children: make([]*template.FileTreeNode, 0),
+					}
+					current.Children = append(current.Children, dirNode)
+				}
+
+				current = dirNode
+			}
+		}
+	}
+
+	// Sort all children recursively (directories first, then files, alphabetically)
+	var sortNode func(*template.FileTreeNode)
+	sortNode = func(node *template.FileTreeNode) {
+		if len(node.Children) == 0 {
+			return
+		}
+
+		slices.SortFunc(node.Children, func(a, b *template.FileTreeNode) int {
+			// Directories come before files
+			if a.IsDir && !b.IsDir {
+				return -1
+			}
+			if !a.IsDir && b.IsDir {
+				return 1
+			}
+			// Within same type, sort alphabetically
+			return strings.Compare(a.Name, b.Name)
+		})
+
+		// Recursively sort children
+		for _, child := range node.Children {
+			if child.IsDir {
+				sortNode(child)
+			}
+		}
+	}
+	sortNode(root)
+
+	return root
+}
+
+func HandleGetObjectHistory(svc *access.Service) http.HandlerFunc {
+	logErr := func(w http.ResponseWriter, r *http.Request, id string, err error) {
+		if err == nil {
+			return
+		}
+		if errors.Is(err, access.ErrNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		logAttrs := []slog.Attr{
+			slog.String("object_id", id),
+		}
+		svc.Logger().LogAttrs(r.Context(), slog.LevelError, err.Error(), logAttrs...)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		id := r.PathValue("id")
+		versions, err := svc.ListVersions(ctx, id)
+		if err != nil {
+			logErr(w, r, id, err)
+			return
+		}
+		slices.Reverse(versions) // most recent first
+		page := &template.ObjectHistory{
+			ObjectID: id,
+			Versions: make([]*template.VersionBrief, len(versions)),
+		}
+		for i, v := range versions {
+			page.Versions[i] = &template.VersionBrief{
+				VNum:     v.VNum(),
+				Created:  v.Created(),
+				Message:  v.Message(),
+				UserName: v.UserName(),
+				UserAddr: v.UserAddr(),
+			}
+		}
+		template.ObjectHistoryPage(page).Render(ctx, w)
+	}
+}
+
+func HandleGetVersionChanges(svc *access.Service) http.HandlerFunc {
+	logErr := func(w http.ResponseWriter, r *http.Request, id string, version string, err error) {
+		if err == nil {
+			return
+		}
+		if errors.Is(err, access.ErrNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		logAttrs := []slog.Attr{
+			slog.String("object_id", id),
+			slog.String("version", version),
+		}
+		svc.Logger().LogAttrs(r.Context(), slog.LevelError, err.Error(), logAttrs...)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		id := r.PathValue("id")
+		version := r.PathValue("version")
+
+		// Parse version number
+		var vn ocfl.VNum
+		err := ocfl.ParseVNum(version, &vn)
+		if err != nil {
+			http.Error(w, "invalid version format", http.StatusBadRequest)
+			return
+		}
+
+		// Sync object and validate version exists
+		obj, err := svc.SyncObject(ctx, id)
+		if err != nil {
+			logErr(w, r, id, version, err)
+			return
+		}
+
+		if vn.Num() > obj.Head().Num() {
+			logErr(w, r, id, version, fmt.Errorf("version %s: %w", version, access.ErrNotFound))
+			return
+		}
+
+		// Get version metadata
+		versionInfo, err := svc.GetVersionInfo(ctx, id, vn.Num())
+		if err != nil {
+			logErr(w, r, id, version, err)
+			return
+		}
+
+		// Calculate version range for comparison
+		fromV := max(vn.Num()-1, 0)
+		toV := vn.Num()
+
+		// Get file changes
+		changes, err := svc.GetVersionChanges(ctx, id, fromV, toV)
+		if err != nil {
+			logErr(w, r, id, version, err)
+			return
+		}
+
+		// Build file tree
+		fileTree := buildFileTree(changes)
+
+		// Prepare page data
+		page := &template.VersionChanges{
+			ObjectID: id,
+			Version: &template.VersionBrief{
+				VNum:     versionInfo.VNum(),
+				Created:  versionInfo.Created(),
+				Message:  versionInfo.Message(),
+				UserName: versionInfo.UserName(),
+				UserAddr: versionInfo.UserAddr(),
+			},
+			FileTree: fileTree,
+		}
+
+		if vn.Num() < obj.Head().Num() {
+			page.NextVNum, _ = vn.Next()
+		}
+		if vn.Num() > 1 {
+			page.PrevVNum = ocfl.V(vn.Num()-1, vn.Padding())
+		}
+
+		template.VersionChangesPage(page).Render(ctx, w)
+	}
+}
+
 // isReadmeFile checks if the file has a markdown extension
 func isReadmeFile(name string) bool {
 	lower := path.Base(strings.ToLower(name))
@@ -294,7 +512,7 @@ func HandleIndex() http.HandlerFunc {
 	}
 }
 
-func redirectToDefaultObjectPath(w http.ResponseWriter, r *http.Request) {
+func redirectToDefaultObjectFiles(w http.ResponseWriter, r *http.Request) {
 	version := r.PathValue("version")
 	currentPath := r.PathValue("path")
 	// since the object id may include escape sequences update both Path and

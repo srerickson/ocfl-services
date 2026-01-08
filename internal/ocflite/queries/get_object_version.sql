@@ -1,4 +1,5 @@
 SELECT 
+    o.padding,
     v.message,
     v.created_at,
     v.user_name,

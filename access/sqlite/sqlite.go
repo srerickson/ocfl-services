@@ -126,6 +126,46 @@ func (db *DB) GetObjectVersion(ctx context.Context, rootID string, objID string,
 	return &versionInfo{ver: version}, nil
 }
 
+func (db *DB) GetObjectVersionChanges(ctx context.Context, rootID string, objID string, fromV, toV int) ([]access.VersionFileChange, error) {
+	conn, err := db.Pool.Take(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Pool.Put(conn)
+	changes, err := ocflite.GetVersionChanges(conn, rootID, objID, fromV, toV)
+	if err != nil {
+		if errors.Is(err, ocflite.ErrNotFound) {
+			return nil, access.ErrNotFound
+		}
+		return nil, err
+	}
+	result := make([]access.VersionFileChange, len(changes))
+	for i, c := range changes {
+		result[i] = &versionFileChange{change: c}
+	}
+	return result, nil
+}
+
+func (db *DB) ListObjectVersions(ctx context.Context, rootID string, objID string) ([]access.VersionInfo, error) {
+	conn, err := db.Pool.Take(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer db.Pool.Put(conn)
+	versions, err := ocflite.ListVersions(conn, rootID, objID)
+	if err != nil {
+		if errors.Is(err, ocflite.ErrNotFound) {
+			return nil, access.ErrNotFound
+		}
+		return nil, err
+	}
+	result := make([]access.VersionInfo, len(versions))
+	for i, v := range versions {
+		result[i] = &versionInfo{ver: v}
+	}
+	return result, nil
+}
+
 func (db *DB) ReadObjectVersionDir(ctx context.Context, rootID string, objID string, vn int, dir string) ([]access.VersionDirEntry, error) {
 	conn, err := db.Pool.Take(ctx)
 	if err != nil {
@@ -235,7 +275,7 @@ func (db *DB) setObject(ctx context.Context, rootID string, obj *ocfl.Object) (e
 	objInput := &ocflite.Object{
 		ID:              obj.ID(),
 		StoragePath:     obj.Path(),
-		VPadding:        obj.Head().Padding(),
+		Vpadding:        obj.Head().Padding(),
 		DigestAlgorithm: obj.DigestAlgorithm().ID(),
 		InventoryDigest: obj.InventoryDigest(),
 		Manifest:        ocflite.DigestMap(obj.Manifest()),
@@ -320,7 +360,7 @@ type objectInfo struct {
 
 func (o *objectInfo) ID() string              { return o.obj.ID }
 func (o *objectInfo) StoragePath() string     { return o.obj.StoragePath }
-func (o *objectInfo) Head() ocfl.VNum         { return ocfl.V(o.obj.Head, o.obj.VPadding) }
+func (o *objectInfo) Head() ocfl.VNum         { return ocfl.V(o.obj.Head, o.obj.Vpadding) }
 func (o *objectInfo) Alg() string             { return o.obj.DigestAlgorithm }
 func (o *objectInfo) InventoryDigest() string { return o.obj.InventoryDigest }
 func (o *objectInfo) CreatedAt() time.Time    { return o.obj.CreatedAt }
@@ -333,6 +373,7 @@ type versionInfo struct {
 
 var _ access.VersionInfo = (*versionInfo)(nil)
 
+func (v *versionInfo) VNum() ocfl.VNum    { return ocfl.V(v.ver.Vnum, v.ver.Vpadding) }
 func (v *versionInfo) Message() string    { return v.ver.Message }
 func (v *versionInfo) UserName() string   { return v.ver.UserName }
 func (v *versionInfo) UserAddr() string   { return v.ver.UserAddr }
@@ -377,6 +418,26 @@ func (c *objectFileInfo) Digest() string      { return c.info.Digest }
 func (c *objectFileInfo) ContentPath() string { return c.info.ContentPath }
 func (c *objectFileInfo) Size() int64         { return c.info.Size }
 func (c *objectFileInfo) HasSize() bool       { return c.info.HasSize }
+
+type versionFileChange struct {
+	change *ocflite.FileChange
+}
+
+var _ access.VersionFileChange = (*versionFileChange)(nil)
+
+func (c *versionFileChange) Path() string { return c.change.Path }
+func (c *versionFileChange) Type() string {
+	switch c.change.ModType {
+	case ocflite.FileAdded:
+		return "added"
+	case ocflite.FileModified:
+		return "modified"
+	case ocflite.FileDeleted:
+		return "deleted"
+	default:
+		return ""
+	}
+}
 
 // FIXME: this feels out of place since it's not specific to sqlite.
 func batchStatFiles(ctx context.Context, fsys fs.FS, files map[string]string, numWorkers int) (map[string]int64, error) {

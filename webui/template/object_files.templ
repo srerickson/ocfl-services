@@ -8,10 +8,10 @@ import (
 
 type ObjectFiles struct {
 	ObjectID         string
-	VersionRef       string // version ref from request url
+	VersionRef       string // version ref from request url ("head" or "v2")
+	VNum             ocfl.VNum
 	CurrentPath      string
 	DigestAlgorithm  string
-	Version          VersionBrief
 	DirectoryEntries []*DirectoryEntry
 	ReadmeHref       string
 }
@@ -26,63 +26,78 @@ type DirectoryEntry struct {
 	IsDir   bool
 }
 
-type VersionBrief struct {
-	VNum     ocfl.VNum
-	Message  string
-	UserName string
-	UserAddr string
-	Created  time.Time
-}
-
+// ObjectFiles renders a list files in a given object, version,
+// and directory path. The front page for an object is version="head" and
+// path="/". If the path is "/" and the file list includes a README file,
+// the contents of the README are also rendered below the file list.
 templ ObjectFilesPage(page *ObjectFiles) {
 	@BaseLayout() {
-		<h2 class="object-id">{ page.ObjectID }</h2>
-		<div class="files panel">
-			<div class="breadcrumb panel-top">
-				<div class="path">
-					<a class="version-ref" href={ utils.LinkObjectPath(page.ObjectID, page.VersionRef, ".", true) }>
-						{ page.VersionRef }
-					</a>
-					for crumbName, crumbPath := range utils.Breadcrumb(page.CurrentPath) {
-						<a href={ utils.LinkObjectPath(page.ObjectID, page.VersionRef, crumbPath, true) }>
-							<span class="mx-1">/</span>
-							{ crumbName }
-						</a>
+		<div class="files">
+			@ObjectHeader(page.ObjectID)
+			<h2 class="visually-hidden">File listing for { page.VersionRef }</h2>
+			@filePathBreadcrumb(page.ObjectID, page.VersionRef, page.CurrentPath)
+			<table class="panel">
+				<thead>
+					<tr>
+						<th scope="col">Name</th>
+						<th scope="col">Modified</th>
+						<th scope="col">Size</th>
+						<th scope="col">Digest</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, entry := range page.DirectoryEntries {
+						@directoryEntryRow(entry)
 					}
-				</div>
-				<a href="/history" class="history">
-					@icon("clock")
-					<div class="created">2025-04-2</div>
-				</a>
-			</div>
-			<div class="panel-body">
-				<table>
-					<tbody>
-						for _, entry := range page.DirectoryEntries {
-							@directoryEntryRow(entry)
-						}
-					</tbody>
-				</table>
-			</div>
+				</tbody>
+			</table>
+			if page.ReadmeHref != "" {
+				@readmeMD(page.ReadmeHref)
+			}
 		</div>
-
-		if page.ReadmeHref != "" {
-			@readmeMD(page.ReadmeHref)
-		}
 	}
 }
 
+templ filePathBreadcrumb(objID string, version string, logicalPath string) {
+	<nav aria-label="Breadcrumb" class="breadcrumb">
+		// link to root directory of active version ("head", "v2") 
+		<a class="version-ref" href={ utils.LinkObjectFiles(objID, version, ".", true) }>
+			{ version }
+		</a>
+		// path links
+		for crumbName, crumbPath := range utils.Breadcrumb(logicalPath) {
+			<span aria-hidden="true" class="slash">/</span>
+			<a href={ utils.LinkObjectFiles(objID, version, crumbPath, true) }>
+				{ crumbName }
+			</a>
+		}
+	</nav>
+}
+
+// render div where readme will load async'ly using htmx.
 templ readmeMD(readmeHref string) {
 	if readmeHref != "" {
 		<div class="panel readme">
-			<div class="panel-top">README</div>
+			<div class="panel-top">
+				<h2>README</h2>
+			</div>
 			<div class="panel-body">
-				<article class="prose markdown" hx-get={ readmeHref } hx-trigger="load"></article>
+				<article
+					class="prose markdown"
+					hx-get={ readmeHref }
+					hx-trigger="load"
+					aria-live="polite"
+					aria-busy="true"
+					hx-on::after-request="this.setAttribute('aria-busy', 'false')"
+				>
+					<p class="visually-hidden">Loading README content...</p>
+				</article>
 			</div>
 		</div>
 	}
 }
 
+// table row entry for directorie entries
 templ directoryEntryRow(row *DirectoryEntry) {
 	<tr>
 		<td>
@@ -92,7 +107,7 @@ templ directoryEntryRow(row *DirectoryEntry) {
 				} else {
 					@icon("file")
 				}
-				<a href={ row.Href } class="file-name">{ row.Name }</a>
+				<a href={ row.Href }>{ row.Name }</a>
 			</div>
 		</td>
 		<td>

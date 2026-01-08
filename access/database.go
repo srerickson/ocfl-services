@@ -38,6 +38,13 @@ type Database interface {
 	// object's most recent version is used.
 	GetObjectVersion(ctx context.Context, rootID string, objID string, vn int) (VersionInfo, error)
 
+	// GetObjectVersionChanges returns list of VersionFileChange values
+	// representing changes from fromV to toV versions.
+	GetObjectVersionChanges(ctx context.Context, rootID string, objID string, fromV, toV int) ([]VersionFileChange, error)
+
+	// ListObjectVersions
+	ListObjectVersions(ctx context.Context, rootID string, objdID string) ([]VersionInfo, error)
+
 	// ReadObjectVersionDir returns listing for entries in an OCFL object
 	// version's logical state. . If vn < 1,
 	// the object's most recent version is used.
@@ -84,6 +91,7 @@ type ContentFileInfo interface {
 // VersionInfo represents high-level information about an object version: it
 // doesn't include the version state.
 type VersionInfo interface {
+	VNum() ocfl.VNum
 	Message() string
 	UserName() string
 	UserAddr() string
@@ -108,4 +116,9 @@ type VersionDirEntry interface {
 	Size() int64
 	HasSize() bool
 	IsDir() bool
+}
+
+type VersionFileChange interface {
+	Path() string // file path
+	Type() string // "added", "modified", "deleted"
 }
