@@ -446,3 +446,32 @@ func TestInventoryDownload(t *testing.T) {
 		be.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
+
+func TestObjectActionsMenu(t *testing.T) {
+	h := testHandler(t)
+	invLink := `href="` + inventoryPath(fixtureObjectID) + `"`
+
+	t.Run("object files page has inventory download link", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, objectPath(fixtureObjectID, "head", "")+"/")
+		be.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		be.In(t, invLink, body)
+		be.In(t, "Download inventory.json", body)
+	})
+
+	t.Run("object history page has inventory download link", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, historyPath(fixtureObjectID, ""))
+		be.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		be.In(t, invLink, body)
+		be.In(t, "Download inventory.json", body)
+	})
+
+	t.Run("version changes page has inventory download link", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, historyPath(fixtureObjectID, "v1"))
+		be.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		be.In(t, invLink, body)
+		be.In(t, "Download inventory.json", body)
+	})
+}
