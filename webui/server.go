@@ -49,6 +49,8 @@ func New(accessService *access.Service) http.Handler {
 	mux.HandleFunc("GET /history/{id}", HandleGetObjectHistory(accessService))
 	mux.HandleFunc("GET /history/{id}/{version}", HandleGetVersionChanges(accessService))
 
+	mux.HandleFunc("GET /inventory/{id}", HandleGetObjectInventory(accessService))
+
 	// wrap with logging middleware
 	return loggingMiddleware(accessService.Logger())(mux)
 }
@@ -509,6 +511,30 @@ func markdownToHTML(md []byte) []byte {
 func HandleIndex() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		template.Index().Render(r.Context(), w)
+	}
+}
+
+func HandleGetObjectInventory(svc *access.Service) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		objID := r.PathValue("id")
+
+		data, err := svc.OpenObjectInventory(ctx, objID)
+		if err != nil {
+			if errors.Is(err, access.ErrNotFound) {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+			svc.Logger().LogAttrs(ctx, slog.LevelError, err.Error(),
+				slog.String("object_id", objID))
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", `attachment; filename="inventory.json"`)
+		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+		w.Write(data)
 	}
 }
 
