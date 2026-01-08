@@ -28,7 +28,7 @@ templ VersionChangesPage(page *VersionChanges) {
 					<h2 class="panel-title">{ page.Version.VNum.String() } Details</h2>
 					<div class="panel-controls">
 						if page.PrevVNum.IsZero() {
-							<span class="nav-link disabled" aria-hidden="true">
+							<span class="nav-link disabled" aria-hidden="true" title="Previous version">
 								@icon("chevron-left")
 								<span class="visually-hidden">Previous version (unavailable)</span>
 							</span>
@@ -37,13 +37,14 @@ templ VersionChangesPage(page *VersionChanges) {
 								class="nav-link"
 								href={ utils.LinkVersionChanges(page.ObjectID, page.PrevVNum.String()) }
 								aria-label="Go to previous version"
+								title="Previous version"
 							>
 								@icon("chevron-left")
 								<span class="visually-hidden">Previous version</span>
 							</a>
 						}
 						if page.NextVNum.IsZero() {
-							<span class="nav-link disabled" aria-hidden="true">
+							<span class="nav-link disabled" aria-hidden="true" title="Next version">
 								@icon("chevron-right")
 								<span class="visually-hidden">Next version (unavailable)</span>
 							</span>
@@ -52,6 +53,7 @@ templ VersionChangesPage(page *VersionChanges) {
 								class="nav-link"
 								href={ utils.LinkVersionChanges(page.ObjectID, page.NextVNum.String()) }
 								aria-label="Go to next version"
+								title="Next version"
 							>
 								@icon("chevron-right")
 								<span class="visually-hidden">Next version</span>
@@ -61,6 +63,7 @@ templ VersionChangesPage(page *VersionChanges) {
 							class="nav-link"
 							href={ utils.LinkObjectHistory(page.ObjectID) }
 							aria-label="View all versions"
+							title="View all versions"
 						>
 							@icon("list")
 							<span class="visually-hidden">View all versions</span>
@@ -102,7 +105,7 @@ templ VersionChangesPage(page *VersionChanges) {
 				<div class="panel-top">
 					<h2 class="panel-title">Changed Files</h2>
 					<div class="panel-controls">
-						<a class="nav-link" href={ utils.LinkObjectFiles(page.ObjectID, page.Version.VNum.String(), ".", true) }>
+						<a class="nav-link" href={ utils.LinkObjectFiles(page.ObjectID, page.Version.VNum.String(), ".", true) } title="Browse files">
 							<span>Browse { page.Version.VNum.String() }</span>
 							@icon("folder-open")
 						</a>
