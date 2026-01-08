@@ -5,6 +5,13 @@
 
 - Specs have format: `WHEN [condition/event] THE SYSTEM SHALL [expected behavior]`
 
+## Preferred Flow for New Features
+
+1. **Update the spec** - Add new requirements to the appropriate spec file in `specs/`
+2. **Write tests** - Create tests based on the new requirements
+3. **Implement** - Write the code to make the tests pass
+4. **Run tests** - Verify all tests pass before committing
+
 - Comments should explain motivations and quirks of a block, not repeat what it
   says.
 
