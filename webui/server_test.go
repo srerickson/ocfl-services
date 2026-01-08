@@ -58,6 +58,10 @@ func historyPath(id, version string) string {
 	return p
 }
 
+func inventoryPath(id string) string {
+	return "/inventory/" + url.PathEscape(id)
+}
+
 func TestHandleIndex(t *testing.T) {
 	h := testHandler(t)
 
@@ -411,5 +415,34 @@ func TestBuildFileTree(t *testing.T) {
 		be.In(t, "exampl", body)
 		be.In(t, "folder", body)
 		be.In(t, "justfile", body)
+	})
+}
+
+func TestInventoryDownload(t *testing.T) {
+	h := testHandler(t)
+
+	t.Run("GET inventory returns JSON with correct headers", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, inventoryPath(fixtureObjectID))
+		be.Equal(t, http.StatusOK, w.Code)
+		be.Equal(t, "application/json", w.Header().Get("Content-Type"))
+		be.Equal(t, `attachment; filename="inventory.json"`, w.Header().Get("Content-Disposition"))
+		be.True(t, w.Header().Get("Content-Length") != "")
+	})
+
+	t.Run("inventory contains valid OCFL inventory JSON", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, inventoryPath(fixtureObjectID))
+		be.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		// Check for key OCFL inventory fields
+		be.In(t, `"id"`, body)
+		be.In(t, `"type"`, body)
+		be.In(t, `"digestAlgorithm"`, body)
+		be.In(t, `"versions"`, body)
+		be.In(t, `"manifest"`, body)
+	})
+
+	t.Run("nonexistent object returns 404", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, inventoryPath("nonexistent"))
+		be.Equal(t, http.StatusNotFound, w.Code)
 	})
 }
