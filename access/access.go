@@ -158,6 +158,19 @@ func (s *Service) ReadVersionDir(ctx context.Context, objID string, vn int, dir 
 // Root returns the service's OCFL Storage Root.
 func (s *Service) Root() *ocfl.Root { return s.root }
 
+// OpenObjectInventory returns the raw JSON bytes of an object's root inventory.
+func (s *Service) OpenObjectInventory(ctx context.Context, objID string) ([]byte, error) {
+	obj, err := s.SyncObject(ctx, objID)
+	if err != nil {
+		return nil, err
+	}
+	inv, err := ocfl.ReadInventory(ctx, s.root.FS(), obj.StoragePath())
+	if err != nil {
+		return nil, err
+	}
+	return inv.MarshalBinary()
+}
+
 // syncObject updates the index record for objID. The prev argument is optional
 // -- if provided, the sidecar digest is to check if the ocfl has changed.
 func (s *Service) syncObject(ctx context.Context, objID string, prev ObjectInfo) (ObjectInfo, error) {

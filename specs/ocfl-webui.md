@@ -115,3 +115,25 @@ THE SYSTEM SHALL log the request via logging middleware.
 WHEN an error occurs during request handling
 THE SYSTEM SHALL log the error with relevant context (object_id, path, version, etc.).
 
+
+## Inventory Download
+
+WHEN an http client requests `/inventory/{object_id}`
+THE SYSTEM SHALL respond with the raw JSON content from the object's root inventory.json file.
+
+WHEN serving an inventory download
+THE SYSTEM SHALL set the Content-Type header to "application/json".
+
+WHEN serving an inventory download
+THE SYSTEM SHALL set the Content-Disposition header to trigger a file download with filename "inventory.json".
+
+WHEN an http client requests `/inventory/{object_id}` for an object that does not exist
+THE SYSTEM SHALL respond with HTTP 404 Not Found.
+
+## Object Actions Menu
+
+WHEN viewing any object page
+THE SYSTEM SHALL display a dropdown menu with object actions.
+
+WHEN the object actions menu is displayed
+THE SYSTEM SHALL include a "Download inventory.json" link that downloads the object's inventory.

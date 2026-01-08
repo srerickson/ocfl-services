@@ -32,3 +32,7 @@ func LinkObjectHistory(objID string) templ.SafeURL {
 func LinkVersionChanges(objID string, version string) templ.SafeURL {
 	return templ.URL("/history/" + url.PathEscape(objID) + "/" + version)
 }
+
+func LinkObjectInventory(objID string) templ.SafeURL {
+	return templ.URL("/inventory/" + url.PathEscape(objID))
+}
