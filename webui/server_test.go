@@ -476,8 +476,8 @@ func TestObjectActionsMenu(t *testing.T) {
 	})
 }
 
-func TestObjectFilesDownloadWithAuth(t *testing.T) {
-	// Create a handler with OAuth enabled (requires auth for downloads)
+func testHandlerWithAuth(t *testing.T) http.Handler {
+	t.Helper()
 	tempDir := t.TempDir()
 	dbPath := filepath.Join(tempDir, "test.db")
 	db, err := sqlite.NewDB(dbPath)
@@ -487,12 +487,15 @@ func TestObjectFilesDownloadWithAuth(t *testing.T) {
 	t.Cleanup(func() { db.Close() })
 	root := testutil.FixtureRootCopy(t, filepath.Join("..", "testdata"))
 	svc := access.NewService(root, db, "test", nil)
-	// Enable OAuth (with dummy credentials)
-	h := server.New(svc, &server.OAuthConfig{
+	return server.New(svc, &server.OAuthConfig{
 		ClientID:     "test-client-id",
 		ClientSecret: "test-secret",
 		RedirectURL:  "http://localhost/auth/callback",
 	})
+}
+
+func TestObjectFilesDownloadWithAuth(t *testing.T) {
+	h := testHandlerWithAuth(t)
 
 	t.Run("unauthenticated file download returns 401", func(t *testing.T) {
 		w := doRequest(t, h, http.MethodGet, objectPath(fixtureObjectID, "v1", "a_file.txt"))
@@ -509,5 +512,36 @@ func TestObjectFilesDownloadWithAuth(t *testing.T) {
 		be.Equal(t, http.StatusTemporaryRedirect, w.Code)
 		loc := w.Header().Get("Location")
 		be.In(t, "accounts.google.com", loc)
+	})
+}
+
+func TestLoginReturnURL(t *testing.T) {
+	h := testHandlerWithAuth(t)
+
+	t.Run("login button has onclick handler for return URL", func(t *testing.T) {
+		// Request an object page
+		w := doRequest(t, h, http.MethodGet, objectPath(fixtureObjectID, "head", "")+"/")
+		be.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		// Login link should have onclick handler that sets return parameter
+		be.In(t, "onclick=", body)
+		be.In(t, "/auth/login?return=", body)
+	})
+
+	t.Run("login with return param sets cookie", func(t *testing.T) {
+		returnURL := "/object/ark%3A123%2Fabc/head/"
+		w := doRequest(t, h, http.MethodGet, "/auth/login?return="+url.QueryEscape(returnURL))
+		be.Equal(t, http.StatusTemporaryRedirect, w.Code)
+		// Check that oauth_return cookie is set
+		cookies := w.Result().Cookies()
+		var returnCookie *http.Cookie
+		for _, c := range cookies {
+			if c.Name == "oauth_return" {
+				returnCookie = c
+				break
+			}
+		}
+		be.True(t, returnCookie != nil)
+		be.Equal(t, returnURL, returnCookie.Value)
 	})
 }

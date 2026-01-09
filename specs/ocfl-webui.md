@@ -140,3 +140,20 @@ THE SYSTEM SHALL display a dropdown menu with object actions.
 
 WHEN the object actions menu is displayed
 THE SYSTEM SHALL include a "Download inventory.json" link that downloads the object's inventory.
+
+## Authentication
+
+WHEN OAuth is configured and a user clicks the login button
+THE SYSTEM SHALL redirect the user to Google OAuth for authentication.
+
+WHEN a user completes the OAuth login flow successfully
+THE SYSTEM SHALL redirect the user back to the page where they initiated the login.
+
+WHEN a user is authenticated
+THE SYSTEM SHALL display their name and avatar in the header with a logout button.
+
+WHEN a user is not authenticated
+THE SYSTEM SHALL display a "Login with Google" button in the header.
+
+WHEN OAuth is configured and an unauthenticated user attempts to download a file
+THE SYSTEM SHALL respond with HTTP 401 Unauthorized.

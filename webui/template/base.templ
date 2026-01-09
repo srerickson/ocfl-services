@@ -45,7 +45,11 @@ templ authControls() {
 			</span>
 			<a href="/auth/logout" class="auth-btn logout-btn">Logout</a>
 		} else {
-			<a href="/auth/login" class="auth-btn login-btn">Login with Google</a>
+			<a
+				href="/auth/login"
+				class="auth-btn login-btn"
+				onclick="this.href='/auth/login?return='+encodeURIComponent(window.location.pathname+window.location.search)"
+			>Login with Google</a>
 		}
 	</div>
 }
