@@ -545,3 +545,23 @@ func TestLoginReturnURL(t *testing.T) {
 		be.Equal(t, returnURL, returnCookie.Value)
 	})
 }
+
+func TestLoginButtonVisibility(t *testing.T) {
+	t.Run("login button hidden when OAuth not configured", func(t *testing.T) {
+		h := testHandler(t) // no OAuth
+		w := doRequest(t, h, http.MethodGet, "/")
+		be.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		be.True(t, !strings.Contains(body, "Login"))
+		be.True(t, !strings.Contains(body, "/auth/login"))
+	})
+
+	t.Run("login button shown when OAuth configured", func(t *testing.T) {
+		h := testHandlerWithAuth(t) // with OAuth
+		w := doRequest(t, h, http.MethodGet, "/")
+		be.Equal(t, http.StatusOK, w.Code)
+		body := w.Body.String()
+		be.In(t, "Login", body)
+		be.In(t, "/auth/login", body)
+	})
+}

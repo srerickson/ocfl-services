@@ -152,7 +152,10 @@ THE SYSTEM SHALL redirect the user back to the page where they initiated the log
 WHEN a user is authenticated
 THE SYSTEM SHALL display their name and avatar in the header with a logout button.
 
-WHEN a user is not authenticated
+WHEN OAuth is not configured
+THE SYSTEM SHALL NOT display login/logout buttons in the header.
+
+WHEN OAuth is configured and a user is not authenticated
 THE SYSTEM SHALL display a "Login" button in the header.
 
 WHEN OAuth is configured and an unauthenticated user attempts to download a file
