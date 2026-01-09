@@ -36,12 +36,19 @@ type User struct {
 type contextKey string
 
 const userContextKey contextKey = "oauth_user"
+const enabledContextKey contextKey = "oauth_enabled"
 
 // UserFromContext retrieves the authenticated user from the request context.
 // Returns nil if no user is authenticated.
 func UserFromContext(ctx context.Context) *User {
 	user, _ := ctx.Value(userContextKey).(*User)
 	return user
+}
+
+// IsEnabled returns true if OAuth is enabled in this context.
+func IsEnabled(ctx context.Context) bool {
+	enabled, _ := ctx.Value(enabledContextKey).(bool)
+	return enabled
 }
 
 // Middleware provides OAuth2 authentication.
@@ -89,13 +96,15 @@ func (m *Middleware) RegisterHandlers(mux *http.ServeMux) {
 
 // Wrap wraps a handler to extract user info from session cookie.
 // It does NOT enforce authentication - it just populates context with user if present.
+// It also marks OAuth as enabled in the context.
 func (m *Middleware) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), enabledContextKey, true)
 		user := m.getUserFromCookie(r)
 		if user != nil {
-			ctx := context.WithValue(r.Context(), userContextKey, user)
-			r = r.WithContext(ctx)
+			ctx = context.WithValue(ctx, userContextKey, user)
 		}
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }

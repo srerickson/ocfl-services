@@ -33,23 +33,26 @@ templ BaseLayout() {
 }
 
 // authControls renders login/logout buttons based on auth state from context.
+// Only renders if OAuth is enabled.
 templ authControls() {
-	{{ user := oauth.UserFromContext(ctx) }}
-	<div class="auth-controls">
-		if user != nil {
-			<span class="user-info">
-				if user.Picture != "" {
-					<img src={ user.Picture } alt="" class="user-avatar" referrerpolicy="no-referrer"/>
-				}
-				<span class="user-name">{ user.Name }</span>
-			</span>
-			<a href="/auth/logout" class="auth-btn logout-btn">Logout</a>
-		} else {
-			<a
-				href="/auth/login"
-				class="auth-btn login-btn"
-				onclick="this.href='/auth/login?return='+encodeURIComponent(window.location.pathname+window.location.search)"
-			>Login</a>
-		}
-	</div>
+	if oauth.IsEnabled(ctx) {
+		{{ user := oauth.UserFromContext(ctx) }}
+		<div class="auth-controls">
+			if user != nil {
+				<span class="user-info">
+					if user.Picture != "" {
+						<img src={ user.Picture } alt="" class="user-avatar" referrerpolicy="no-referrer"/>
+					}
+					<span class="user-name">{ user.Name }</span>
+				</span>
+				<a href="/auth/logout" class="auth-btn logout-btn">Logout</a>
+			} else {
+				<a
+					href="/auth/login"
+					class="auth-btn login-btn"
+					onclick="this.href='/auth/login?return='+encodeURIComponent(window.location.pathname+window.location.search)"
+				>Login</a>
+			}
+		</div>
+	}
 }
