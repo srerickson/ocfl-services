@@ -3,11 +3,14 @@ package oauth
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -19,7 +22,7 @@ type Config struct {
 	ClientID     string
 	ClientSecret string
 	RedirectURL  string // e.g., "http://localhost:8283/auth/callback"
-	SessionKey   []byte // 32 bytes for cookie encryption (optional, uses signing if nil)
+	SessionKey   []byte // Key for HMAC signing session cookies (if nil, derives from ClientSecret)
 }
 
 // User represents an authenticated user.
@@ -43,8 +46,9 @@ func UserFromContext(ctx context.Context) *User {
 
 // Middleware provides OAuth2 authentication.
 type Middleware struct {
-	oauthConfig *oauth2.Config
-	cookieName  string
+	oauthConfig  *oauth2.Config
+	sessionKey   []byte
+	cookieName   string
 	cookieMaxAge int
 }
 
@@ -61,8 +65,16 @@ func NewMiddleware(cfg Config) *Middleware {
 		Endpoint: google.Endpoint,
 	}
 
+	// Use provided session key or derive from client secret
+	sessionKey := cfg.SessionKey
+	if sessionKey == nil {
+		h := sha256.Sum256([]byte(cfg.ClientSecret + "_session_key"))
+		sessionKey = h[:]
+	}
+
 	return &Middleware{
 		oauthConfig:  oauthConfig,
+		sessionKey:   sessionKey,
 		cookieName:   "ocfl_session",
 		cookieMaxAge: 86400 * 7, // 7 days
 	}
@@ -215,10 +227,11 @@ func (m *Middleware) fetchUserInfo(ctx context.Context, token *oauth2.Token) (*U
 func (m *Middleware) setUserCookie(w http.ResponseWriter, r *http.Request, user *User) {
 	data, _ := json.Marshal(user)
 	encoded := base64.URLEncoding.EncodeToString(data)
-	
+	signed := m.signValue(encoded)
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     m.cookieName,
-		Value:    encoded,
+		Value:    signed,
 		Path:     "/",
 		MaxAge:   m.cookieMaxAge,
 		HttpOnly: true,
@@ -233,7 +246,13 @@ func (m *Middleware) getUserFromCookie(r *http.Request) *User {
 		return nil
 	}
 
-	data, err := base64.URLEncoding.DecodeString(cookie.Value)
+	// Verify signature and extract payload
+	payload, ok := m.verifyValue(cookie.Value)
+	if !ok {
+		return nil
+	}
+
+	data, err := base64.URLEncoding.DecodeString(payload)
 	if err != nil {
 		return nil
 	}
@@ -243,6 +262,34 @@ func (m *Middleware) getUserFromCookie(r *http.Request) *User {
 		return nil
 	}
 	return &user
+}
+
+// signValue returns "payload.signature" where signature is HMAC-SHA256.
+func (m *Middleware) signValue(payload string) string {
+	mac := hmac.New(sha256.New, m.sessionKey)
+	mac.Write([]byte(payload))
+	sig := base64.URLEncoding.EncodeToString(mac.Sum(nil))
+	return payload + "." + sig
+}
+
+// verifyValue checks the signature and returns the payload if valid.
+func (m *Middleware) verifyValue(signed string) (string, bool) {
+	parts := strings.SplitN(signed, ".", 2)
+	if len(parts) != 2 {
+		return "", false
+	}
+	payload, sig := parts[0], parts[1]
+
+	// Recompute expected signature
+	mac := hmac.New(sha256.New, m.sessionKey)
+	mac.Write([]byte(payload))
+	expectedSig := base64.URLEncoding.EncodeToString(mac.Sum(nil))
+
+	// Constant-time comparison to prevent timing attacks
+	if !hmac.Equal([]byte(sig), []byte(expectedSig)) {
+		return "", false
+	}
+	return payload, true
 }
 
 func generateState() string {
