@@ -1,6 +1,9 @@
 package template
 
+import "github.com/srerickson/ocfl-services/webui/oauth"
+
 // BaseLayout template wraps all other templates.
+// It extracts user info from context automatically.
 templ BaseLayout() {
 	<!DOCTYPE html>
 	<html lang="en" class="h-full" data-theme="dark">
@@ -18,6 +21,7 @@ templ BaseLayout() {
 					<div class="server-name">
 						<a href="/">OCFL webui</a>
 					</div>
+					@authControls()
 				</div>
 			</header>
 			<!-- page content -->
@@ -26,4 +30,22 @@ templ BaseLayout() {
 			</main>
 		</body>
 	</html>
+}
+
+// authControls renders login/logout buttons based on auth state from context.
+templ authControls() {
+	{{ user := oauth.UserFromContext(ctx) }}
+	<div class="auth-controls">
+		if user != nil {
+			<span class="user-info">
+				if user.Picture != "" {
+					<img src={ user.Picture } alt="" class="user-avatar" referrerpolicy="no-referrer"/>
+				}
+				<span class="user-name">{ user.Name }</span>
+			</span>
+			<a href="/auth/logout" class="auth-btn logout-btn">Logout</a>
+		} else {
+			<a href="/auth/login" class="auth-btn login-btn">Login with Google</a>
+		}
+	</div>
 }

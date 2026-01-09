@@ -20,6 +20,7 @@ import (
 	"github.com/gomarkdown/markdown/parser"
 	"github.com/srerickson/ocfl-go"
 	"github.com/srerickson/ocfl-services/access"
+	"github.com/srerickson/ocfl-services/webui/oauth"
 	"github.com/srerickson/ocfl-services/webui/template"
 )
 
@@ -29,8 +30,16 @@ const maxMarkdownSize = 1024 * 1024 * 2 // 2 MiB
 //go:embed static/dst/*
 var staticFiles embed.FS
 
+// OAuthConfig holds OAuth configuration for the server.
+type OAuthConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
 // New creates handler for serving from accessService's OCFL storage root.
-func New(accessService *access.Service) http.Handler {
+// If oauthCfg is provided, OAuth authentication is enabled.
+func New(accessService *access.Service, oauthCfg *OAuthConfig) http.Handler {
 	mux := http.NewServeMux()
 
 	// static files: css and js
@@ -41,7 +50,7 @@ func New(accessService *access.Service) http.Handler {
 	mux.HandleFunc("GET /{$}", HandleIndex())
 
 	// object files view
-	mux.HandleFunc("GET /object/{id}/{version}/{path...}", HandleGetObjectFiles(accessService))
+	mux.HandleFunc("GET /object/{id}/{version}/{path...}", HandleGetObjectFiles(accessService, oauthCfg != nil))
 	mux.HandleFunc("GET /object/{id}/{version}", redirectToDefaultObjectFiles)
 	mux.HandleFunc("GET /object/{id}/", redirectToDefaultObjectFiles)
 	mux.HandleFunc("GET /object/{id}", redirectToDefaultObjectFiles)
@@ -51,11 +60,24 @@ func New(accessService *access.Service) http.Handler {
 
 	mux.HandleFunc("GET /inventory/{id}", HandleGetObjectInventory(accessService))
 
+	var handler http.Handler = mux
+
+	// OAuth middleware if configured
+	if oauthCfg != nil && oauthCfg.ClientID != "" {
+		oauthMiddleware := oauth.NewMiddleware(oauth.Config{
+			ClientID:     oauthCfg.ClientID,
+			ClientSecret: oauthCfg.ClientSecret,
+			RedirectURL:  oauthCfg.RedirectURL,
+		})
+		oauthMiddleware.RegisterHandlers(mux)
+		handler = oauthMiddleware.Wrap(mux)
+	}
+
 	// wrap with logging middleware
-	return loggingMiddleware(accessService.Logger())(mux)
+	return loggingMiddleware(accessService.Logger())(handler)
 }
 
-func HandleGetObjectFiles(svc *access.Service) http.HandlerFunc {
+func HandleGetObjectFiles(svc *access.Service, requireAuthForDownload bool) http.HandlerFunc {
 
 	// request parameters
 	type params struct {
@@ -128,6 +150,11 @@ func HandleGetObjectFiles(svc *access.Service) http.HandlerFunc {
 	handleFile := func(p *params) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
+			// Require authentication for file downloads if enabled
+			if requireAuthForDownload && oauth.UserFromContext(ctx) == nil {
+				http.Error(w, "Authentication required to download files", http.StatusUnauthorized)
+				return
+			}
 			f, err := svc.OpenVersionFile(ctx, p.objID, p.ver.Num(), p.path)
 			if err != nil {
 				logErr(w, r, p, err)

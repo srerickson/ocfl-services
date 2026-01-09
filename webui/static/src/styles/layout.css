@@ -18,6 +18,7 @@ header[role="banner"] {
 .top-menu {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   height: var(--header-height);
   max-width: var(--content-max-width);
   margin: 0 auto;
@@ -51,5 +52,68 @@ header[role="banner"] {
 @media (max-width: 640px) {
   .main {
     padding: var(--space-4) var(--space-3);
+  }
+}
+
+/* ========================================
+ * AUTH CONTROLS
+ * ======================================== */
+
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-name {
+  font-size: var(--text-sm);
+  color: var(--content-secondary);
+}
+
+.auth-btn {
+  font-size: var(--text-sm);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.login-btn {
+  background-color: var(--accent);
+  color: var(--surface-base);
+}
+
+.login-btn:hover {
+  background-color: var(--accent-hover);
+  color: var(--surface-base);
+}
+
+.logout-btn {
+  background-color: var(--surface-raised);
+  color: var(--content-secondary);
+  border: 1px solid var(--border-default);
+}
+
+.logout-btn:hover {
+  background-color: var(--surface-sunken);
+  color: var(--content-primary);
+}
+
+@media (max-width: 640px) {
+  .user-name {
+    display: none;
   }
 }

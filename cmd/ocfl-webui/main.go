@@ -25,7 +25,7 @@ import (
 	ocflS3 "github.com/srerickson/ocfl-go/fs/s3"
 	"github.com/srerickson/ocfl-services/access"
 	"github.com/srerickson/ocfl-services/access/sqlite"
-	"github.com/srerickson/ocfl-services/webui"
+	server "github.com/srerickson/ocfl-services/webui"
 )
 
 const envVarRoot = "OCFL_ROOT" // storage root location string
@@ -47,10 +47,13 @@ func runServer(args []string, w io.Writer) error {
 	defer cancel()
 	// Parse command line flags
 	flags := struct {
-		root  string
-		db    string
-		addr  string
-		debug bool
+		root              string
+		db                string
+		addr              string
+		debug             bool
+		oauthClientID     string
+		oauthClientSecret string
+		oauthRedirectURL  string
 	}{}
 	fs := flag.NewFlagSet("ocfl-server", flag.ContinueOnError)
 	fs.SetOutput(w)
@@ -58,8 +61,21 @@ func runServer(args []string, w io.Writer) error {
 	fs.StringVar(&flags.db, "db", "", "database file path. Defaults to in-memory databases.")
 	fs.StringVar(&flags.addr, "addr", ":8283", "server listen port")
 	fs.BoolVar(&flags.debug, "debug", false, "more verbose log messages")
+	fs.StringVar(&flags.oauthClientID, "oauth-client-id", "", "Google OAuth client ID (or OAUTH_CLIENT_ID env var)")
+	fs.StringVar(&flags.oauthClientSecret, "oauth-client-secret", "", "Google OAuth client secret (or OAUTH_CLIENT_SECRET env var)")
+	fs.StringVar(&flags.oauthRedirectURL, "oauth-redirect-url", "", "OAuth redirect URL (or OAUTH_REDIRECT_URL env var)")
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+	// OAuth config from flags or environment
+	if flags.oauthClientID == "" {
+		flags.oauthClientID = os.Getenv("OAUTH_CLIENT_ID")
+	}
+	if flags.oauthClientSecret == "" {
+		flags.oauthClientSecret = os.Getenv("OAUTH_CLIENT_SECRET")
+	}
+	if flags.oauthRedirectURL == "" {
+		flags.oauthRedirectURL = os.Getenv("OAUTH_REDIRECT_URL")
 	}
 	var logLevel slog.Level
 	if flags.debug {
@@ -103,9 +119,21 @@ func runServer(args []string, w io.Writer) error {
 	logger.Info("database initialized", "path", flags.db)
 	// Create HTTP server
 	service := access.NewService(root, db, flags.root, logger)
+
+	// Configure OAuth if credentials provided
+	var oauthCfg *server.OAuthConfig
+	if flags.oauthClientID != "" {
+		oauthCfg = &server.OAuthConfig{
+			ClientID:     flags.oauthClientID,
+			ClientSecret: flags.oauthClientSecret,
+			RedirectURL:  flags.oauthRedirectURL,
+		}
+		logger.Info("OAuth authentication enabled")
+	}
+
 	httpServer := &http.Server{
 		Addr:    flags.addr,
-		Handler: server.New(service),
+		Handler: server.New(service, oauthCfg),
 	}
 	// Set up signal handling for graceful shutdown
 	serverErrChan := make(chan error, 1)

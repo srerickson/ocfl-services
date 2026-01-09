@@ -28,7 +28,7 @@ func testHandler(t *testing.T) http.Handler {
 	t.Cleanup(func() { db.Close() })
 	root := testutil.FixtureRootCopy(t, filepath.Join("..", "testdata"))
 	svc := access.NewService(root, db, "test", nil)
-	return server.New(svc)
+	return server.New(svc, nil)
 }
 
 func doRequest(t *testing.T, h http.Handler, method, path string) *httptest.ResponseRecorder {
@@ -473,5 +473,41 @@ func TestObjectActionsMenu(t *testing.T) {
 		body := w.Body.String()
 		be.In(t, invLink, body)
 		be.In(t, "Download inventory.json", body)
+	})
+}
+
+func TestObjectFilesDownloadWithAuth(t *testing.T) {
+	// Create a handler with OAuth enabled (requires auth for downloads)
+	tempDir := t.TempDir()
+	dbPath := filepath.Join(tempDir, "test.db")
+	db, err := sqlite.NewDB(dbPath)
+	if err != nil {
+		t.Fatal("setting up test db:", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	root := testutil.FixtureRootCopy(t, filepath.Join("..", "testdata"))
+	svc := access.NewService(root, db, "test", nil)
+	// Enable OAuth (with dummy credentials)
+	h := server.New(svc, &server.OAuthConfig{
+		ClientID:     "test-client-id",
+		ClientSecret: "test-secret",
+		RedirectURL:  "http://localhost/auth/callback",
+	})
+
+	t.Run("unauthenticated file download returns 401", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, objectPath(fixtureObjectID, "v1", "a_file.txt"))
+		be.Equal(t, http.StatusUnauthorized, w.Code)
+	})
+
+	t.Run("unauthenticated directory listing still works", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, objectPath(fixtureObjectID, "head", "")+"/")
+		be.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("login endpoint redirects to Google", func(t *testing.T) {
+		w := doRequest(t, h, http.MethodGet, "/auth/login")
+		be.Equal(t, http.StatusTemporaryRedirect, w.Code)
+		loc := w.Header().Get("Location")
+		be.In(t, "accounts.google.com", loc)
 	})
 }
