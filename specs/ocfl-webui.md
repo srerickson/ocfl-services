@@ -153,7 +153,7 @@ WHEN a user is authenticated
 THE SYSTEM SHALL display their name and avatar in the header with a logout button.
 
 WHEN a user is not authenticated
-THE SYSTEM SHALL display a "Login with Google" button in the header.
+THE SYSTEM SHALL display a "Login" button in the header.
 
 WHEN OAuth is configured and an unauthenticated user attempts to download a file
 THE SYSTEM SHALL respond with HTTP 401 Unauthorized.
