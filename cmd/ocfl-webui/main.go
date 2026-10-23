@@ -153,7 +153,7 @@ func parseRootFlag(ctx context.Context, loc string, logger *slog.Logger) (ocflfs
 			return nil, "", err
 		}
 		s3Client := s3.NewFromConfig(cfg)
-		fsys := &ocflS3.BucketFS{S3: s3Client, Bucket: bucket, Logger: logger}
+		fsys := ocflS3.NewBucketFS(s3Client, bucket, ocflS3.WithLogger(logger))
 		return fsys, prefix, nil
 	case "http", "https":
 		fsys := httpfs.New(loc)
