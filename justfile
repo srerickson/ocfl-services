@@ -23,6 +23,6 @@ build: test
 
 install-tools:
     npm install
-    go install github.com/a-h/templ/cmd/templ@v0.3.960
-    go install github.com/google/ko@v0.18.0
-    go install github.com/air-verse/air@latest
+    go install github.com/a-h/templ/cmd/templ@v0.3.1070
+    go install github.com/google/ko@v0.19.1
+    go install github.com/air-verse/air@v1.67.4

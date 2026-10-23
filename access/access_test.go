@@ -12,6 +12,7 @@ import (
 	"github.com/carlmjohnson/be"
 	"github.com/srerickson/ocfl-go"
 	"github.com/srerickson/ocfl-go/digest"
+	"github.com/srerickson/ocfl-go/stage"
 	"github.com/srerickson/ocfl-services/access"
 	"github.com/srerickson/ocfl-services/access/sqlite"
 	"github.com/srerickson/ocfl-services/internal/testutil"
@@ -115,9 +116,19 @@ func TestRepo_ReadVersionDir(t *testing.T) {
 		svc := testService(t)
 		root := svc.Root()
 		objID := "object-001"
-		obj, err := root.NewObject(ctx, objID)
-		be.NilErr(t, err)
 		user := ocfl.User{Name: "test user name", Address: "test user address"}
+		updateObject := func(msg string, created time.Time, content map[string][]byte) {
+			u, _, err := root.NewObjectUpdate(ctx, objID, ocfl.NewUpdateWithDigestAlgorithm(digest.SHA256))
+			be.NilErr(t, err)
+			be.NilErr(t, u.Clear())
+			var src stage.BytesContentMap
+			for name, b := range content {
+				be.NilErr(t, stage.Bytes(u, &src, name, b))
+			}
+			be.NilErr(t, u.Finalize(msg, user, ocfl.FinalizeWithVersionCreated(created)))
+			_, err = root.Apply(ctx, u, &src)
+			be.NilErr(t, err)
+		}
 
 		// v1
 		v1Created := time.Date(2025, 1, 1, 12, 59, 0, 0, time.Local)
@@ -127,20 +138,14 @@ func TestRepo_ReadVersionDir(t *testing.T) {
 			"dir2/to_update.txt": []byte("this file will be updated"),
 			"dir3/unchanged.txt": []byte("this file will stay the same"),
 		}
-		stage, err := ocfl.StageBytes(content, digest.SHA256)
-		be.NilErr(t, err)
-		_, err = obj.Update(ctx, stage, "version-1", user, ocfl.UpdateWithVersionCreated(v1Created))
-		be.NilErr(t, err)
+		updateObject("version-1", v1Created, content)
 
 		// v2
 		v2Created := v1Created.Add(24 * time.Hour)
 		delete(content, "dir1/to_delete.txt")
 		content["dir2/to_update.txt"] = []byte("this has been updated")
 		content["dir4/new.txt"] = []byte("this is a new file")
-		stage, err = ocfl.StageBytes(content, digest.SHA256)
-		be.NilErr(t, err)
-		_, err = obj.Update(ctx, stage, "version-2", user, ocfl.UpdateWithVersionCreated(v2Created))
-		be.NilErr(t, err)
+		updateObject("version-2", v2Created, content)
 
 		t.Run("v2 root", func(t *testing.T) {
 			got, err := svc.ReadVersionDir(ctx, objID, 2, ".")
