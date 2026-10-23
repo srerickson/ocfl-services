@@ -42,6 +42,7 @@ func LocalFS(t *testing.T, srcDirs ...string) *local.FS {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { fsys.Close() })
 	return fsys
 }
 
